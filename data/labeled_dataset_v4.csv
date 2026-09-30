@@ -1,0 +1,336 @@
+prompt,tier
+"Write a short, original four-line poem about an old library after closing time. Do not reuse lines from any existing published poem.",3
+What is the capital of Brazil? Answer in one word.,1
+What is 415 + 210?,1
+Analyze the ethical implications of using AI to screen job applicants automatically and provide a nuanced recommendation.,3
+What year did the founding of the United Nations happen?,1
+"Compare Kafka and RabbitMQ in terms of performance, in about 100 words.",2
+What is 196 + 140?,1
+"Write a short, original four-line poem about a train station at dawn. Do not reuse lines from any existing published poem.",3
+"A train leaves City A at 53 km/h heading to City B, 481km away. Another train leaves City B at the same time heading to City A at 77 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Write a short, original four-line poem about a street musician playing in the rain. Do not reuse lines from any existing published poem.",3
+Extract the tracking number from this text: 'Your package tracking ID is TRK-556231JP.',1
+"Compare and contrast monolith and microservices for an IoT fleet of smart thermostats, and recommend one with justification.",3
+Extract the flight number from this text: 'Boarding begins for flight AI-302 at gate 14.',1
+"Rewrite this paragraph in a more formal tone: 'can we push the call to tomorrow, something came up on my end'",2
+What is the capital of Japan? Answer in one word.,1
+Extract the email address from this text: 'Contact Raj at raj418060@gmail.com for details.',1
+Convert 10 liters to gallons.,1
+"Compare SQL and NoSQL in terms of developer experience, in about 100 words.",2
+Explain the difference between REST and GraphQL in 3-4 sentences.,2
+What is the capital of France? Answer in one word.,1
+What is the plural of 'octopus'?,1
+Analyze the ethical implications of deploying facial recognition in public transit stations and provide a nuanced recommendation.,3
+You are advising a startup on whether to hire senior engineers now or juniors and scale later. Weigh the trade-offs and give a recommendation with reasoning.,3
+What is the capital of Ireland? Answer in one word.,1
+What is the opposite of 'optimistic'?,1
+"Categorize these items into groups: violin, drum, flute, guitar, trumpet",2
+"Categorize these items into groups: sedan, bicycle, ferry, helicopter, scooter",2
+What year did the first modern Olympics happen?,1
+Analyze the ethical implications of using predictive policing algorithms in city budgeting and provide a nuanced recommendation.,3
+Explain the difference between Redis and Memcached in 3-4 sentences.,2
+Convert 42 km to miles.,1
+"Reformat this name from 'Bose, Ishaan' to 'Ishaan Bose'.",1
+Convert 5 meters to feet.,1
+What is the opposite of 'matrix'?,1
+What year did the abolition of slavery in the US happen?,1
+What is 419 + 37?,1
+"Debug this logic: three friends split a bill evenly, but one paid the whole thing upfront and was reimbursed by only one other friend - who still owes money, and how much, if the bill was 1200? Explain your reasoning at each step.",3
+List three pros and three cons of cryptocurrency payments.,2
+"Categorize these items into groups: Visa, MasterCard, PayPal, bank transfer, cash",2
+"Design a system architecture for a social media feed ranking service, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+List three pros and three cons of microservices architecture.,2
+"Classify the sentiment of this review as positive, negative, or neutral: 'Instructions were confusing and the app kept crashing on setup.'",2
+"A train leaves City A at 75 km/h heading to City B, 264km away. Another train leaves City B at the same time heading to City A at 78 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"A train leaves City A at 60 km/h heading to City B, 350km away. Another train leaves City B at the same time heading to City A at 63 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"A train leaves City A at 60 km/h heading to City B, 395km away. Another train leaves City B at the same time heading to City A at 90 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Categorize these items into groups: lion, sparrow, salmon, cobra, dolphin",2
+"Compare supervised learning and unsupervised learning in terms of cost, in about 100 words.",2
+What is 204 + 454?,1
+"Reformat this name from 'Reddy, Meera' to 'Meera Reddy'.",1
+Extract the phone number from this text: 'Call our support line at 011-4567-8901 for help.',1
+"Compare monolith and microservices in terms of developer experience, in about 100 words.",2
+"Compare and contrast monolith and microservices for a ride-sharing app's real-time matching service, and recommend one with justification.",3
+"Compare and contrast monolith and microservices for a multi-tenant SaaS billing system, and recommend one with justification.",3
+Analyze the ethical implications of using students' academic data to train a commercial AI product and provide a nuanced recommendation.,3
+"Write a short story (150-200 words) about a chess match between old rivals, with a twist ending.",3
+"Rewrite this paragraph in a more formal tone: 'no worries if you can't make it, we'll fill you in after'",2
+What is the capital of Thailand? Answer in one word.,1
+"Extract the price from this text: 'The item costs Rs. 2,499 including tax.'",1
+"Write a short, original four-line poem about a monsoon evening in Noida. Do not reuse lines from any existing published poem.",3
+Extract the employee ID from this text: 'New hires are assigned an ID like EMP-4471.',1
+Convert 3 hours to minutes.,1
+Explain the difference between SQL and NoSQL in 3-4 sentences.,2
+"A train leaves City A at 49 km/h heading to City B, 488km away. Another train leaves City B at the same time heading to City A at 69 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Debug this logic: a function is supposed to return true only when a list is sorted, but it returns true for an empty list and a single-element list too - is that a bug? Explain your reasoning at each step.",3
+Capitalize the following text: 'the server will be down for maintenance tonight',1
+You are advising a startup on whether to charge a flat subscription or usage-based pricing. Weigh the trade-offs and give a recommendation with reasoning.,3
+What is the capital of South Korea? Answer in one word.,1
+"Compare and contrast Redis and Memcached for a food delivery app's live order tracking, and recommend one with justification.",3
+"Classify the sentiment of this review as positive, negative, or neutral: 'Fantastic build quality, but the price feels a bit steep.'",2
+What is 462 + 266?,1
+You are advising a startup on whether to build their own auth system or use a third-party provider. Weigh the trade-offs and give a recommendation with reasoning.,3
+What is the opposite of 'rigid'?,1
+You are advising a startup on whether to self-host their infrastructure or stay on the cloud. Weigh the trade-offs and give a recommendation with reasoning.,3
+Capitalize the following text: 'please submit your timesheet by friday',1
+"A train leaves City A at 79 km/h heading to City B, 306km away. Another train leaves City B at the same time heading to City A at 66 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+What is the capital of Turkey? Answer in one word.,1
+What year did India's independence happen?,1
+"Compare and contrast Redis and Memcached for an IoT fleet of smart thermostats, and recommend one with justification.",3
+"Compare supervised learning and unsupervised learning in terms of performance, in about 100 words.",2
+Explain the difference between Docker and Kubernetes in 3-4 sentences.,2
+What is 111 + 444?,1
+"Reformat this name from 'Khan, Sana' to 'Sana Khan'.",1
+"Given this JSON schema, generate one valid example object: {""user"": ""string"", ""score"": ""number"", ""passed"": ""boolean""}",2
+"Write a short, original four-line poem about a lighthouse keeper's last night on the job. Do not reuse lines from any existing published poem.",3
+What is the capital of Sweden? Answer in one word.,1
+"Compare and contrast Redis and Memcached for a video streaming recommendation pipeline, and recommend one with justification.",3
+What year did the invention of the World Wide Web happen?,1
+"Classify the sentiment of this review as positive, negative, or neutral: 'Package arrived damaged and support was slow to respond.'",2
+Capitalize the following text: 'our office will be closed for the holiday',1
+"Given this JSON schema, generate one valid example object: {""title"": ""string"", ""pages"": ""integer"", ""genres"": ""array""}",2
+What is the plural of 'transparent'?,1
+"Write a short story (150-200 words) about a programmer debugging code late at night, with a twist ending.",3
+What is 415 + 443?,1
+"Compare monolith and microservices in terms of cost, in about 100 words.",2
+List three pros and three cons of gig economy platforms.,2
+"A train leaves City A at 76 km/h heading to City B, 440km away. Another train leaves City B at the same time heading to City A at 78 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+What is the opposite of 'criterion'?,1
+"Design a system architecture for a high-traffic e-commerce checkout flow, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+Convert 4096 bytes to kilobytes.,1
+What year did the fall of the Berlin Wall happen?,1
+"Compare Redis and Memcached in terms of scalability, in about 100 words.",2
+What is the plural of 'formula'?,1
+"Rewrite this paragraph in a more formal tone: 'just a heads up the numbers look off, might want to double check them'",2
+"Write a short story (150-200 words) about an astronaut's first steps on Mars, with a twist ending.",3
+What is 303 + 144?,1
+"Compare and contrast SQL and NoSQL for a food delivery app's live order tracking, and recommend one with justification.",3
+What is 126 + 403?,1
+"Rewrite this paragraph in a more formal tone: 'thanks a ton for the help earlier, really saved us on the demo'",2
+"Write a short, original four-line poem about an astronaut's first steps on Mars. Do not reuse lines from any existing published poem.",3
+"Debug this logic: if all Bloops are Razzies and all Razzies are Lazzies, are all Bloops definitely Lazzies? Explain your reasoning at each step.",3
+"Compare monolith and microservices in terms of scalability, in about 100 words.",2
+"Compare Kafka and RabbitMQ in terms of developer experience, in about 100 words.",2
+What is the capital of Argentina? Answer in one word.,1
+List three pros and three cons of open-source software.,2
+What is the plural of 'abundant'?,1
+"Categorize these items into groups: Python, HTML, PostgreSQL, React, Docker",2
+"A train leaves City A at 56 km/h heading to City B, 258km away. Another train leaves City B at the same time heading to City A at 90 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+What is the opposite of 'genuine'?,1
+You are advising a startup on whether to migrate from a monolith to microservices before their Series A. Weigh the trade-offs and give a recommendation with reasoning.,3
+What is the plural of 'index'?,1
+"Summarize the following in two sentences: 'A recent audit found that the recycling program diverted 60% more waste from landfills than projected, but collection costs also rose.'",2
+"Compare and contrast Docker and Kubernetes for a video streaming recommendation pipeline, and recommend one with justification.",3
+List three pros and three cons of electric vehicles.,2
+"Categorize these items into groups: apple, carrot, salmon, broccoli, tuna, banana",2
+What is the capital of Norway? Answer in one word.,1
+List three pros and three cons of vertical farming.,2
+"Write a short, original four-line poem about a programmer debugging code late at night. Do not reuse lines from any existing published poem.",3
+"A train leaves City A at 66 km/h heading to City B, 440km away. Another train leaves City B at the same time heading to City A at 88 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Write a short, original four-line poem about a chess match between old rivals. Do not reuse lines from any existing published poem.",3
+What is the opposite of 'syllabus'?,1
+What is 111 + 278?,1
+Summarize the following in two sentences: 'The startup's pivot from hardware to software subscriptions boosted gross margins but slowed customer acquisition in its first two quarters.',2
+"Given this JSON schema, generate one valid example object: {""name"": ""string"", ""age"": ""integer"", ""is_active"": ""boolean""}",2
+"Compare REST and GraphQL in terms of security, in about 100 words.",2
+What is the plural of 'fragile'?,1
+"Design a system architecture for an IoT fleet of smart thermostats, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+List three pros and three cons of four-day work weeks.,2
+What is 259 + 472?,1
+Debug this logic: a clock shows 3:15 - what is the angle between the hour and minute hands? Explain your reasoning at each step.,3
+Convert 18 kg to lb.,1
+What is the opposite of 'expand'?,1
+"Summarize the following in two sentences: 'The hospital's new triage system cut average emergency room wait times by nearly a third, though staff say it added extra paperwork per patient.'",2
+What is the opposite of 'cactus'?,1
+"Rewrite this paragraph in a more formal tone: 'hey just wanted to check if you got my last email, let me know when you can'",2
+"Reformat this name from 'Nair, Divya' to 'Divya Nair'.",1
+Capitalize the following text: 'thank you for your recent purchase',1
+Extract the website URL from this text: 'More details are available at www.example-store.com.',1
+Extract the invoice number from this text: 'Please reference invoice INV-2024-0091 in your reply.',1
+You are advising a startup on whether to prioritize a mobile app or a web app for their MVP. Weigh the trade-offs and give a recommendation with reasoning.,3
+What is the capital of Portugal? Answer in one word.,1
+Convert 1500 watts to kilowatts.,1
+What is the opposite of 'fragile'?,1
+What is the opposite of 'index'?,1
+"Write a short story (150-200 words) about an old library after closing time, with a twist ending.",3
+"A train leaves City A at 52 km/h heading to City B, 385km away. Another train leaves City B at the same time heading to City A at 93 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+Analyze the ethical implications of collecting biometric data from employees for attendance tracking and provide a nuanced recommendation.,3
+Extract the order ID from this text: 'Your order #ORD-88214 has shipped.',1
+"A train leaves City A at 49 km/h heading to City B, 279km away. Another train leaves City B at the same time heading to City A at 86 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Design a system architecture for a multi-tenant SaaS billing system, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+"Reformat this name from 'Verma, Neha' to 'Neha Verma'.",1
+"Classify the sentiment of this review as positive, negative, or neutral: 'Exactly as described, works perfectly, would buy again.'",2
+Capitalize the following text: 'welcome to the quarterly all-hands meeting',1
+"Design a system architecture for a video streaming recommendation pipeline, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+What is the opposite of 'octopus'?,1
+"Compare REST and GraphQL in terms of developer experience, in about 100 words.",2
+"Categorize these items into groups: hammer, screwdriver, wrench, pliers, drill",2
+"Compare Docker and Kubernetes in terms of cost, in about 100 words.",2
+"Write a short story (150-200 words) about a monsoon evening in Noida, with a twist ending.",3
+"Reformat this name from 'Das, Priya' to 'Priya Das'.",1
+What is the capital of Chile? Answer in one word.,1
+Explain the difference between Kafka and RabbitMQ in 3-4 sentences.,2
+Explain the difference between TCP and UDP in 3-4 sentences.,2
+What is 3 + 490?,1
+Capitalize the following text: 'your subscription renews automatically next week',1
+"Summarize the following in two sentences: 'Local farmers reported a stronger-than-expected harvest this year, attributed to a milder monsoon season and new irrigation subsidies.'",2
+What is 63 + 128?,1
+"Design a system architecture for a bank's fraud detection pipeline, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+"Classify the sentiment of this review as positive, negative, or neutral: 'Customer service was rude and unhelpful when I asked for a refund.'",2
+"A train leaves City A at 57 km/h heading to City B, 220km away. Another train leaves City B at the same time heading to City A at 96 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+What is the opposite of 'analysis'?,1
+"Classify the sentiment of this review as positive, negative, or neutral: 'It's okay, does what it says, nothing special.'",2
+What is the capital of Poland? Answer in one word.,1
+List three pros and three cons of universal basic income.,2
+What year did the release of the first iPhone happen?,1
+What is 75 + 137?,1
+Rewrite this paragraph in a more formal tone: 'so basically the deadline moved up and we need this done way sooner now',2
+"Design a system architecture for a food delivery app's live order tracking, considering scalability, cost, and maintainability. Explain your key trade-offs.",3
+What is 444 + 375?,1
+"Summarize the following in two sentences: 'The study surveyed 4,000 remote workers and found that flexible hours correlated more strongly with reported job satisfaction than salary did.'",2
+Convert 30 celsius to fahrenheit.,1
+"A train leaves City A at 73 km/h heading to City B, 243km away. Another train leaves City B at the same time heading to City A at 72 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Compare and contrast monolith and microservices for a food delivery app's live order tracking, and recommend one with justification.",3
+"Given this JSON schema, generate one valid example object: {""product_id"": ""string"", ""price"": ""number"", ""in_stock"": ""boolean""}",2
+What year did the first moon landing happen?,1
+"Write a short story (150-200 words) about a train station at dawn, with a twist ending.",3
+"Compare Python and Go in terms of developer experience, in about 100 words.",2
+What is 486 + 283?,1
+Capitalize the following text: 'this offer expires at the end of the month',1
+"Classify the sentiment of this review as positive, negative, or neutral: 'The product works fine but shipping took way too long.'",2
+Explain the difference between Python and Go in 3-4 sentences.,2
+What is the opposite of 'transparent'?,1
+"Compare and contrast Kafka and RabbitMQ for a bank's fraud detection pipeline, and recommend one with justification.",3
+"A train leaves City A at 66 km/h heading to City B, 254km away. Another train leaves City B at the same time heading to City A at 91 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+"Given this JSON schema, generate one valid example object: {""order_id"": ""string"", ""items"": ""array"", ""total"": ""number""}",2
+"Write a short story (150-200 words) about a lighthouse keeper's last night on the job, with a twist ending.",3
+What is 276 + 65?,1
+What is 48 + 388?,1
+Capitalize the following text: 'the new update improves battery life significantly',1
+What is 272 + 130?,1
+"A train leaves City A at 80 km/h heading to City B, 322km away. Another train leaves City B at the same time heading to City A at 98 km/h. How far from City A do they meet, and how long does it take? Show your reasoning step by step.",3
+Analyze the ethical implications of using AI-generated content without disclosing it to readers and provide a nuanced recommendation.,3
+"Compare TCP and UDP in terms of developer experience, in about 100 words.",2
+"Summarize the following in two sentences: 'Researchers found that the new battery chemistry retains 92% of its capacity after 1,000 charge cycles, a marked improvement over the previous generation.'",2
+"Summarize the following in two sentences: 'The company reported record quarterly revenue driven by strong cloud services growth, though operating margins narrowed due to increased infrastructure spending.'",2
+Convert 25 cm to inches.,1
+What is an API?,1
+What is Kubernetes?,1
+What is a vector database?,1
+What is data drift?,1
+What is a model registry?,1
+What is a load balancer?,1
+What is a database index?,1
+What is a Python dictionary?,1
+What is a SQL primary key?,1
+What is a Docker image?,1
+What is an environment variable?,1
+What is a REST endpoint?,1
+What is a CSV file?,1
+What is a classification model?,1
+Convert 25 Celsius to Fahrenheit.,1
+What is 37 + 48?,1
+What is 12 multiplied by 9?,1
+What is the capital of Canada?,1
+What is the opposite of expensive?,1
+What is the plural of analysis?,1
+Extract the order ID from this text: Order ID 48291.,1
+Return the domain from this email: user@example.com.,1
+"Sort these numbers in ascending order: 8, 2, 5, 1.",1
+Convert 3 kilometers to meters.,1
+Explain how a decision tree chooses a split.,2
+Explain how a REST API handles a request.,2
+Describe how Docker containers isolate application dependencies.,2
+Explain how vector databases perform similarity search.,2
+Describe how an API gateway routes incoming requests.,2
+Explain how data drift can affect a machine learning model.,2
+Describe the purpose of feature scaling in machine learning.,2
+Explain how a message queue decouples application services.,2
+Describe how database indexing improves query performance.,2
+Explain how a CI pipeline validates a software change.,2
+Describe the role of a model registry in machine learning.,2
+Explain how a load balancer distributes application traffic.,2
+Describe how embeddings represent text for similarity search.,2
+Explain how a cache can reduce API response time.,2
+Describe how authentication works for an API.,2
+Explain how a classification model produces a prediction.,2
+Describe how container orchestration differs from containerization.,2
+Explain how a database transaction maintains consistency.,2
+Describe how a message broker handles queued messages.,2
+Explain how feature stores support machine learning systems.,2
+Compare REST and GraphQL for a small web application.,2
+Compare batch processing and stream processing.,2
+Compare Docker containers and virtual machines.,2
+Compare relational databases and document databases.,2
+Summarize the purpose of model monitoring in production.,2
+Summarize how an ML model moves from training to deployment.,2
+Summarize the main components of a typical API service.,2
+Summarize how vector search retrieves similar documents.,2
+Summarize how CI/CD pipelines support software delivery.,2
+Explain why precision and recall measure different aspects of classification.,2
+Explain why database indexes can improve query performance.,2
+Explain why containers are useful for deploying applications.,2
+Explain why monitoring latency matters for production APIs.,2
+Explain why data validation is useful before model inference.,2
+List the main components of a REST API request.,2
+List the main stages of a machine learning training workflow.,2
+List common causes of API request failures.,2
+List common metrics used to evaluate a classification model.,2
+List the typical components of a Docker deployment.,2
+Describe how retries can help an unreliable network request.,2
+Describe how rate limiting protects an API.,2
+Explain how structured logging helps debug an application.,2
+Describe how health checks indicate whether a service is available.,2
+Explain how configuration files separate deployment settings from application code.,2
+"Design an LLM gateway that handles provider timeouts, rate limits, authentication failures, retries, fallback models, and request logging.",3
+"Create a deployment architecture that supports automated rollback, health checks, traffic shifting, and service-level monitoring.",3
+"Develop a system for routing AI requests across multiple providers while accounting for latency, reliability, token usage, and response quality.",3
+"Build a production pipeline that validates a machine learning model, registers the artifact, deploys it, monitors drift, and triggers retraining when performance degrades.",3
+"Create an evaluation system that compares several LLM providers using response quality, latency, failure rate, token consumption, and workload type.",3
+"Design a service that detects provider degradation, stops sending traffic to unhealthy providers, and restores traffic after recovery.",3
+"Build an API platform that authenticates requests, applies rate limits, routes traffic, records metrics, and handles provider failures.",3
+"Create a production workflow for training, validating, deploying, monitoring, and retraining machine learning models.",3
+"Develop a multi-provider inference service that tracks cost, latency, failures, quality scores, and fallback activity for every request.",3
+"Design a system that receives an AI request, selects a provider, retries transient failures, verifies the response, and records usage.",3
+"Build a monitoring service that detects abnormal latency, increasing error rates, provider outages, and degraded response quality.",3
+"Design a model deployment workflow that validates an artifact, checks compatibility, performs a staged rollout, and automatically rolls back failed deployments.",3
+"Create an ML platform that manages datasets, experiments, model artifacts, deployments, monitoring, and retraining triggers.",3
+"Develop a reliable inference pipeline that validates input data, selects a model, performs inference, verifies the result, and records operational metrics.",3
+"Design an API architecture that supports authentication, request validation, asynchronous processing, persistent storage, monitoring, and failure recovery.",3
+"Build a system for automatically moving traffic between AI providers based on latency, error rates, availability, and quality measurements.",3
+"Create an LLM evaluation pipeline that generates test requests, collects provider responses, scores quality, measures latency, and stores historical results.",3
+"Develop a production service that combines caching, rate limiting, retries, circuit breaking, fallback routing, and observability.",3
+"Design a machine learning service that detects schema changes, validates incoming data, serves predictions, monitors drift, and alerts operators.",3
+"Build a data pipeline that validates incoming records, transforms data, computes features, stores results, and reports failed quality checks.",3
+"Create a deployment process that runs regression tests, validates configuration, checks service health, performs a staged rollout, and supports rollback.",3
+"Design a platform for comparing AI providers across multiple workloads while storing quality, latency, reliability, and cost measurements.",3
+"Develop an automated workflow that detects failed model deployments, collects diagnostics, restores the previous version, and records the incident.",3
+"Build a service that combines request classification, model routing, provider fallback, response verification, cost tracking, and audit logging.",3
+"Design an ML monitoring workflow that combines prediction quality, feature drift, data quality, latency, error rates, and retraining decisions.",3
+"Create a reliable API service that handles authentication errors, validation failures, timeouts, retries, dependency failures, and structured error reporting.",3
+"Develop an AI request router that considers request complexity, provider availability, estimated cost, historical latency, and response quality.",3
+"Build an evaluation framework that separates retrieval quality, generation quality, latency, token usage, and provider reliability for an AI system.",3
+"Design a production RAG service that handles document ingestion, chunking, retrieval, reranking, response generation, citation validation, and monitoring.",3
+"Create a workflow that detects low-quality AI responses, retries with another provider, records the failure reason, and updates provider health metrics.",3
+"Build a multi-tenant API platform with authentication, tenant-level quotas, request routing, usage accounting, monitoring, and isolated configuration.",3
+"Design a model serving system that supports multiple model versions, controlled traffic allocation, health checks, metrics, and automated rollback.",3
+"Develop a pipeline that takes raw data through validation, preprocessing, training, evaluation, registration, deployment, monitoring, and retraining.",3
+"Create a provider reliability system that combines health probes, timeout detection, circuit breakers, fallback routing, recovery detection, and operational alerts.",3
+"Build an AI cost management service that records token usage, estimates provider costs, selects lower-cost providers, verifies quality, and escalates failed requests.",3
+"Design a production inference workflow that validates requests, selects a model, handles dependency failures, verifies outputs, records traces, and exposes operational metrics.",3
+"Create an automated release system that runs tests, checks model quality, validates deployment health, shifts traffic gradually, and rolls back unsafe releases.",3
+"Develop a system that identifies degraded provider performance from latency, error rates, timeout frequency, and quality measurements before changing traffic.",3
+"Build a machine learning platform that supports experiment tracking, artifact versioning, model promotion, deployment gates, monitoring, and automated retraining.",3
+"Design an AI gateway that maintains provider health state, routes requests dynamically, applies retry policies, records costs, and preserves request traces.",3
+"Create a production pipeline for an AI service that includes input validation, routing, provider execution, output verification, fallback handling, and audit records.",3
+"Develop a monitoring and recovery workflow that detects service degradation, opens a circuit, redirects traffic, probes recovery, and restores normal routing.",3
+"Build a benchmarking system that executes representative workloads, records latency percentiles, token economics, failure rates, quality scores, and provider-level results.",3
+What is a DNS record?,1
+What is a Python tuple?,1
+What is a machine learning feature?,1
+What is an HTTP header?,1
+What is a database schema?,1
+What is a software dependency?,1
+Explain how DNS resolution works for a web request.,2
+"Build a release workflow that validates application changes, runs automated tests, checks deployment health, shifts traffic gradually, and restores the previous version when failures occur.",3
+"Create an AI operations platform that tracks model selection, response quality, provider availability, usage costs, audit events, and service health.",3

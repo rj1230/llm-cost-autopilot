@@ -8,7 +8,7 @@
   },
   "metrics": {
     "requests": 30,
-    "routing_accuracy": 0.93333333,
+    "routing_accuracy": 0.56666667,
     "successful_requests": 30,
     "failed_requests": 0,
     "success_rate": 1.0,
@@ -29,11 +29,11 @@
       "total": 5800
     },
     "cost_usd": {
-      "actual": 0.0015015,
-      "average_per_request": 5.005e-05,
+      "actual": 0.00169275,
+      "average_per_request": 5.642e-05,
       "gpt4o_baseline": 0.041125,
-      "estimated_savings": 0.0396235,
-      "estimated_savings_rate": 0.96348936
+      "estimated_savings": 0.03943225,
+      "estimated_savings_rate": 0.95883891
     }
   },
   "by_tier": {
@@ -47,15 +47,15 @@
     },
     "2": {
       "requests": 10,
-      "routing_accuracy": 0.8,
+      "routing_accuracy": 0.3,
       "successful_requests": 10,
       "fallback_requests": 0,
       "average_latency_s": 0.9,
-      "total_cost_usd": 0.000459
+      "total_cost_usd": 0.00065025
     },
     "3": {
       "requests": 10,
-      "routing_accuracy": 1.0,
+      "routing_accuracy": 0.4,
       "successful_requests": 10,
       "fallback_requests": 0,
       "average_latency_s": 1.35,
@@ -265,9 +265,9 @@
       "request_id": "benchmark-012",
       "prompt": "Explain how a random forest classifier works.",
       "expected_tier": 2,
-      "predicted_tier": 2,
-      "primary_model": "groq-gpt-oss-20b",
-      "routed_model": "groq-gpt-oss-20b",
+      "predicted_tier": 1,
+      "primary_model": "mistral-small",
+      "routed_model": "mistral-small",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -275,9 +275,9 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 3.825e-05,
+      "cost_usd": 7.65e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.00123675
+      "savings_usd": 0.0011985
     },
     {
       "request_id": "benchmark-013",
@@ -301,9 +301,9 @@
       "request_id": "benchmark-014",
       "prompt": "Explain the purpose of Docker in machine learning deployment.",
       "expected_tier": 2,
-      "predicted_tier": 2,
-      "primary_model": "groq-gpt-oss-20b",
-      "routed_model": "groq-gpt-oss-20b",
+      "predicted_tier": 1,
+      "primary_model": "mistral-small",
+      "routed_model": "mistral-small",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -311,9 +311,9 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 3.825e-05,
+      "cost_usd": 7.65e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.00123675
+      "savings_usd": 0.0011985
     },
     {
       "request_id": "benchmark-015",
@@ -355,9 +355,9 @@
       "request_id": "benchmark-017",
       "prompt": "How does an API gateway improve a production system?",
       "expected_tier": 2,
-      "predicted_tier": 2,
-      "primary_model": "groq-gpt-oss-20b",
-      "routed_model": "groq-gpt-oss-20b",
+      "predicted_tier": 1,
+      "primary_model": "mistral-small",
+      "routed_model": "mistral-small",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -365,9 +365,9 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 3.825e-05,
+      "cost_usd": 7.65e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.00123675
+      "savings_usd": 0.0011985
     },
     {
       "request_id": "benchmark-018",
@@ -391,9 +391,9 @@
       "request_id": "benchmark-019",
       "prompt": "Describe a typical machine learning model deployment pipeline.",
       "expected_tier": 2,
-      "predicted_tier": 2,
-      "primary_model": "groq-gpt-oss-20b",
-      "routed_model": "groq-gpt-oss-20b",
+      "predicted_tier": 1,
+      "primary_model": "mistral-small",
+      "routed_model": "mistral-small",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -401,17 +401,17 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 3.825e-05,
+      "cost_usd": 7.65e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.00123675
+      "savings_usd": 0.0011985
     },
     {
       "request_id": "benchmark-020",
       "prompt": "Explain why monitoring data drift is useful in production ML.",
       "expected_tier": 2,
-      "predicted_tier": 2,
-      "primary_model": "groq-gpt-oss-20b",
-      "routed_model": "groq-gpt-oss-20b",
+      "predicted_tier": 1,
+      "primary_model": "mistral-small",
+      "routed_model": "mistral-small",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -419,9 +419,9 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 3.825e-05,
+      "cost_usd": 7.65e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.00123675
+      "savings_usd": 0.0011985
     },
     {
       "request_id": "benchmark-021",
@@ -463,7 +463,7 @@
       "request_id": "benchmark-023",
       "prompt": "Design an evaluation framework that measures routing accuracy, quality, latency, token economics, fallback frequency, and long-tail reliability across multiple LLM providers.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
@@ -481,7 +481,7 @@
       "request_id": "benchmark-024",
       "prompt": "Explain how an enterprise AI platform should combine model selection, quality verification, cost optimization, provider resilience, audit logging, and automated operational monitoring.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
@@ -517,7 +517,7 @@
       "request_id": "benchmark-026",
       "prompt": "Develop a strategy for detecting degraded LLM provider health and automatically shifting traffic using circuit breakers, timeouts, fallback models, and recovery probes.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
@@ -535,7 +535,7 @@
       "request_id": "benchmark-027",
       "prompt": "Design a benchmarking methodology for comparing LLM providers using statistically meaningful latency percentiles, failure rates, token economics, quality scores, and workload segments.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
@@ -553,7 +553,7 @@
       "request_id": "benchmark-028",
       "prompt": "Explain how to build a reliable LLM gateway that handles rate limits, authentication failures, network errors, timeouts, server errors, retries, and provider failover.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
@@ -589,7 +589,7 @@
       "request_id": "benchmark-030",
       "prompt": "Create a production rollout strategy for an LLM routing service with health checks, observability, failure injection, regression tests, deployment gates, and measurable cost savings.",
       "expected_tier": 3,
-      "predicted_tier": 3,
+      "predicted_tier": 2,
       "primary_model": "groq-gpt-oss-20b",
       "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,

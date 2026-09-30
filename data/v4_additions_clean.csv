@@ -1,0 +1,121 @@
+prompt,tier
+What is an API?,1
+What is Kubernetes?,1
+What is a vector database?,1
+What is data drift?,1
+What is a model registry?,1
+What is a load balancer?,1
+What is a database index?,1
+What is a Python dictionary?,1
+What is a SQL primary key?,1
+What is a Docker image?,1
+What is an environment variable?,1
+What is a REST endpoint?,1
+What is a CSV file?,1
+What is a classification model?,1
+Convert 25 Celsius to Fahrenheit.,1
+What is 37 + 48?,1
+What is 12 multiplied by 9?,1
+What is the capital of Canada?,1
+What is the opposite of expensive?,1
+What is the plural of analysis?,1
+Extract the order ID from this text: Order ID 48291.,1
+Return the domain from this email: user@example.com.,1
+"Sort these numbers in ascending order: 8, 2, 5, 1.",1
+Convert 3 kilometers to meters.,1
+Explain how a decision tree chooses a split.,2
+Explain how a REST API handles a request.,2
+Describe how Docker containers isolate application dependencies.,2
+Explain how vector databases perform similarity search.,2
+Describe how an API gateway routes incoming requests.,2
+Explain how data drift can affect a machine learning model.,2
+Describe the purpose of feature scaling in machine learning.,2
+Explain how a message queue decouples application services.,2
+Describe how database indexing improves query performance.,2
+Explain how a CI pipeline validates a software change.,2
+Describe the role of a model registry in machine learning.,2
+Explain how a load balancer distributes application traffic.,2
+Describe how embeddings represent text for similarity search.,2
+Explain how a cache can reduce API response time.,2
+Describe how authentication works for an API.,2
+Explain how a classification model produces a prediction.,2
+Describe how container orchestration differs from containerization.,2
+Explain how a database transaction maintains consistency.,2
+Describe how a message broker handles queued messages.,2
+Explain how feature stores support machine learning systems.,2
+Compare REST and GraphQL for a small web application.,2
+Compare batch processing and stream processing.,2
+Compare Docker containers and virtual machines.,2
+Compare relational databases and document databases.,2
+Summarize the purpose of model monitoring in production.,2
+Summarize how an ML model moves from training to deployment.,2
+Summarize the main components of a typical API service.,2
+Summarize how vector search retrieves similar documents.,2
+Summarize how CI/CD pipelines support software delivery.,2
+Explain why precision and recall measure different aspects of classification.,2
+Explain why database indexes can improve query performance.,2
+Explain why containers are useful for deploying applications.,2
+Explain why monitoring latency matters for production APIs.,2
+Explain why data validation is useful before model inference.,2
+List the main components of a REST API request.,2
+List the main stages of a machine learning training workflow.,2
+List common causes of API request failures.,2
+List common metrics used to evaluate a classification model.,2
+List the typical components of a Docker deployment.,2
+Describe how retries can help an unreliable network request.,2
+Describe how rate limiting protects an API.,2
+Explain how structured logging helps debug an application.,2
+Describe how health checks indicate whether a service is available.,2
+Explain how configuration files separate deployment settings from application code.,2
+"Design an LLM gateway that handles provider timeouts, rate limits, authentication failures, retries, fallback models, and request logging.",3
+"Create a deployment architecture that supports automated rollback, health checks, traffic shifting, and service-level monitoring.",3
+"Develop a system for routing AI requests across multiple providers while accounting for latency, reliability, token usage, and response quality.",3
+"Build a production pipeline that validates a machine learning model, registers the artifact, deploys it, monitors drift, and triggers retraining when performance degrades.",3
+"Create an evaluation system that compares several LLM providers using response quality, latency, failure rate, token consumption, and workload type.",3
+"Design a service that detects provider degradation, stops sending traffic to unhealthy providers, and restores traffic after recovery.",3
+"Build an API platform that authenticates requests, applies rate limits, routes traffic, records metrics, and handles provider failures.",3
+"Create a production workflow for training, validating, deploying, monitoring, and retraining machine learning models.",3
+"Develop a multi-provider inference service that tracks cost, latency, failures, quality scores, and fallback activity for every request.",3
+"Design a system that receives an AI request, selects a provider, retries transient failures, verifies the response, and records usage.",3
+"Build a monitoring service that detects abnormal latency, increasing error rates, provider outages, and degraded response quality.",3
+"Design a model deployment workflow that validates an artifact, checks compatibility, performs a staged rollout, and automatically rolls back failed deployments.",3
+"Create an ML platform that manages datasets, experiments, model artifacts, deployments, monitoring, and retraining triggers.",3
+"Develop a reliable inference pipeline that validates input data, selects a model, performs inference, verifies the result, and records operational metrics.",3
+"Design an API architecture that supports authentication, request validation, asynchronous processing, persistent storage, monitoring, and failure recovery.",3
+"Build a system for automatically moving traffic between AI providers based on latency, error rates, availability, and quality measurements.",3
+"Create an LLM evaluation pipeline that generates test requests, collects provider responses, scores quality, measures latency, and stores historical results.",3
+"Develop a production service that combines caching, rate limiting, retries, circuit breaking, fallback routing, and observability.",3
+"Design a machine learning service that detects schema changes, validates incoming data, serves predictions, monitors drift, and alerts operators.",3
+"Build a data pipeline that validates incoming records, transforms data, computes features, stores results, and reports failed quality checks.",3
+"Create a deployment process that runs regression tests, validates configuration, checks service health, performs a staged rollout, and supports rollback.",3
+"Design a platform for comparing AI providers across multiple workloads while storing quality, latency, reliability, and cost measurements.",3
+"Develop an automated workflow that detects failed model deployments, collects diagnostics, restores the previous version, and records the incident.",3
+"Build a service that combines request classification, model routing, provider fallback, response verification, cost tracking, and audit logging.",3
+"Design an ML monitoring workflow that combines prediction quality, feature drift, data quality, latency, error rates, and retraining decisions.",3
+"Create a reliable API service that handles authentication errors, validation failures, timeouts, retries, dependency failures, and structured error reporting.",3
+"Develop an AI request router that considers request complexity, provider availability, estimated cost, historical latency, and response quality.",3
+"Build an evaluation framework that separates retrieval quality, generation quality, latency, token usage, and provider reliability for an AI system.",3
+"Design a production RAG service that handles document ingestion, chunking, retrieval, reranking, response generation, citation validation, and monitoring.",3
+"Create a workflow that detects low-quality AI responses, retries with another provider, records the failure reason, and updates provider health metrics.",3
+"Build a multi-tenant API platform with authentication, tenant-level quotas, request routing, usage accounting, monitoring, and isolated configuration.",3
+"Design a model serving system that supports multiple model versions, controlled traffic allocation, health checks, metrics, and automated rollback.",3
+"Develop a pipeline that takes raw data through validation, preprocessing, training, evaluation, registration, deployment, monitoring, and retraining.",3
+"Create a provider reliability system that combines health probes, timeout detection, circuit breakers, fallback routing, recovery detection, and operational alerts.",3
+"Build an AI cost management service that records token usage, estimates provider costs, selects lower-cost providers, verifies quality, and escalates failed requests.",3
+"Design a production inference workflow that validates requests, selects a model, handles dependency failures, verifies outputs, records traces, and exposes operational metrics.",3
+"Create an automated release system that runs tests, checks model quality, validates deployment health, shifts traffic gradually, and rolls back unsafe releases.",3
+"Develop a system that identifies degraded provider performance from latency, error rates, timeout frequency, and quality measurements before changing traffic.",3
+"Build a machine learning platform that supports experiment tracking, artifact versioning, model promotion, deployment gates, monitoring, and automated retraining.",3
+"Design an AI gateway that maintains provider health state, routes requests dynamically, applies retry policies, records costs, and preserves request traces.",3
+"Create a production pipeline for an AI service that includes input validation, routing, provider execution, output verification, fallback handling, and audit records.",3
+"Develop a monitoring and recovery workflow that detects service degradation, opens a circuit, redirects traffic, probes recovery, and restores normal routing.",3
+"Build a benchmarking system that executes representative workloads, records latency percentiles, token economics, failure rates, quality scores, and provider-level results.",3
+What is a DNS record?,1
+What is a Python tuple?,1
+What is a machine learning feature?,1
+What is an HTTP header?,1
+What is a database schema?,1
+What is a software dependency?,1
+Explain how DNS resolution works for a web request.,2
+"Build a release workflow that validates application changes, runs automated tests, checks deployment health, shifts traffic gradually, and restores the previous version when failures occur.",3
+"Create an AI operations platform that tracks model selection, response quality, provider availability, usage costs, audit events, and service health.",3
