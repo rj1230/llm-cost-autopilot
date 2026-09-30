@@ -1,0 +1,14 @@
+{
+  "requests": 100,
+  "concurrency": 10,
+  "total_duration_s": 0.606642,
+  "throughput_requests_per_second": 164.8419,
+  "successful_requests": 100,
+  "success_rate_pct": 100.0,
+  "unique_request_ids": 100,
+  "persisted_audit_rows": 100,
+  "latency_avg_s": 0.057439,
+  "latency_p50_s": 0.0572,
+  "latency_p95_s": 0.07013,
+  "latency_p99_s": 0.072935
+}

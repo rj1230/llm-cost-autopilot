@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+.env
+data/*.json
+data/*.jsonl
+data/*.db
+data/*.db.bak-*
+data/*.joblib
+data/classifier_feedback.csv
+data/labeled_dataset_augmented.csv
+data/cost_savings_report.md
+data/report_charts/
+!data/.gitkeep
+benchmark/results/*.db

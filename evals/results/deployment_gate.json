@@ -1,0 +1,81 @@
+{
+  "timestamp": "2026-09-23T18:26:25.516734+00:00",
+  "gate": {
+    "name": "LLM Cost Autopilot Deployment Gate",
+    "version": "1.0",
+    "provider_calls": "mocked",
+    "deterministic": true
+  },
+  "application": {
+    "gates": [
+      {
+        "name": "application_readiness",
+        "passed": true,
+        "details": "Deployment readiness tests passed."
+      }
+    ]
+  },
+  "evaluation": {
+    "gates": [
+      {
+        "name": "routing_accuracy",
+        "passed": true,
+        "actual": 0.6,
+        "threshold": 0.5,
+        "comparison": ">="
+      },
+      {
+        "name": "success_rate",
+        "passed": true,
+        "actual": 1.0,
+        "threshold": 0.99,
+        "comparison": ">="
+      },
+      {
+        "name": "fallback_rate",
+        "passed": true,
+        "actual": 0.0,
+        "threshold": 0.2,
+        "comparison": "<="
+      },
+      {
+        "name": "p95_latency",
+        "passed": true,
+        "actual": 1.35,
+        "threshold": 2.0,
+        "comparison": "<="
+      },
+      {
+        "name": "p99_latency",
+        "passed": true,
+        "actual": 1.35,
+        "threshold": 3.0,
+        "comparison": "<="
+      },
+      {
+        "name": "savings_rate",
+        "passed": true,
+        "actual": 0.95697872,
+        "threshold": 0.5,
+        "comparison": ">="
+      }
+    ],
+    "summary": {
+      "total_gates": 6,
+      "passed_gates": 6,
+      "failed_gates": 0,
+      "overall_status": "PASS"
+    }
+  },
+  "regression": {
+    "name": "regression_suite",
+    "passed": true,
+    "details": "Full regression suite passed."
+  },
+  "summary": {
+    "total_gates": 8,
+    "passed_gates": 8,
+    "failed_gates": 0,
+    "overall_status": "PASS"
+  }
+}

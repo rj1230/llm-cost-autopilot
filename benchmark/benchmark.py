@@ -1,0 +1,542 @@
+"""
+Phase 2C routing benchmark for LLM Cost Autopilot.
+
+The benchmark evaluates:
+    - complexity classification accuracy
+    - routing policy
+    - fallback behavior
+    - success/failure rates
+    - latency percentiles
+    - token usage
+    - routing cost
+    - estimated GPT-4o baseline cost
+    - estimated savings
+
+Provider calls are mocked by default.
+
+This keeps the benchmark deterministic and prevents external API
+rate limits from contaminating routing measurements.
+"""
+
+from __future__ import annotations
+
+import json
+import statistics
+import uuid
+from dataclasses import dataclass
+from pathlib import Path
+from unittest.mock import patch
+
+from src.models.registry import get_model
+from src.models.response import Response
+from src.routing import RoutingResult, route_request
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+RESULTS_DIR = ROOT_DIR / "benchmark" / "results"
+RESULTS_PATH = RESULTS_DIR / "latest.json"
+
+GPT4O_MODEL = get_model("gpt-4o")
+
+
+@dataclass(frozen=True)
+class BenchmarkCase:
+    """One deterministic benchmark request."""
+
+    prompt: str
+    expected_tier: int
+    input_tokens: int
+    output_tokens: int
+    latency_s: float
+
+
+@dataclass
+class BenchmarkRecord:
+    """Metrics captured for one benchmark request."""
+
+    request_id: str
+    prompt: str
+    expected_tier: int
+    predicted_tier: int
+    primary_model: str
+    routed_model: str
+    used_fallback: bool
+    success: bool
+    error_type: str | None
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    latency_s: float
+    cost_usd: float
+    baseline_cost_usd: float
+    savings_usd: float
+
+
+def build_benchmark_cases() -> list[BenchmarkCase]:
+    """
+    Build 30 deterministic benchmark cases.
+
+    Ten requests are assigned to each expected complexity tier.
+    """
+
+    simple_prompts = [
+        "What is Python?",
+        "Define an API.",
+        "What is machine learning?",
+        "What does HTTP mean?",
+        "Define a database.",
+        "What is JSON?",
+        "What is Docker?",
+        "What is an embedding?",
+        "What is SQL?",
+        "Define latency.",
+    ]
+
+    medium_prompts = [
+        "Explain the difference between REST and GraphQL.",
+        "Explain how a random forest classifier works.",
+        "Compare PostgreSQL and SQLite for a small application.",
+        "Explain the purpose of Docker in machine learning deployment.",
+        "Describe how vector similarity search works.",
+        "Explain precision, recall, and F1 score.",
+        "How does an API gateway improve a production system?",
+        "Explain the difference between synchronous and asynchronous Python.",
+        "Describe a typical machine learning model deployment pipeline.",
+        "Explain why monitoring data drift is useful in production ML.",
+    ]
+
+    complex_prompts = [
+        (
+            "Design a production architecture for an LLM routing platform "
+            "that minimizes cost while maintaining response quality, "
+            "including routing, fallback, verification, observability, "
+            "and deployment controls."
+        ),
+        (
+            "Analyze how to design a multi-provider LLM reliability system "
+            "with circuit breakers, timeout handling, exponential backoff, "
+            "provider health metrics, and deterministic fallback behavior."
+        ),
+        (
+            "Design an evaluation framework that measures routing accuracy, "
+            "quality, latency, token economics, fallback frequency, and "
+            "long-tail reliability across multiple LLM providers."
+        ),
+        (
+            "Explain how an enterprise AI platform should combine model "
+            "selection, quality verification, cost optimization, provider "
+            "resilience, audit logging, and automated operational monitoring."
+        ),
+        (
+            "Design a production-grade architecture for dynamically routing "
+            "requests across local and cloud LLM providers while enforcing "
+            "quality thresholds and minimizing infrastructure cost."
+        ),
+        (
+            "Develop a strategy for detecting degraded LLM provider health "
+            "and automatically shifting traffic using circuit breakers, "
+            "timeouts, fallback models, and recovery probes."
+        ),
+        (
+            "Design a benchmarking methodology for comparing LLM providers "
+            "using statistically meaningful latency percentiles, failure "
+            "rates, token economics, quality scores, and workload segments."
+        ),
+        (
+            "Explain how to build a reliable LLM gateway that handles "
+            "rate limits, authentication failures, network errors, timeouts, "
+            "server errors, retries, and provider failover."
+        ),
+        (
+            "Design a cost-aware AI inference platform that uses request "
+            "complexity classification to select models and verifies whether "
+            "the selected model produced an acceptable response."
+        ),
+        (
+            "Create a production rollout strategy for an LLM routing service "
+            "with health checks, observability, failure injection, regression "
+            "tests, deployment gates, and measurable cost savings."
+        ),
+    ]
+
+    cases: list[BenchmarkCase] = []
+
+    for prompt in simple_prompts:
+        cases.append(
+            BenchmarkCase(
+                prompt=prompt,
+                expected_tier=1,
+                input_tokens=35,
+                output_tokens=55,
+                latency_s=0.55,
+            )
+        )
+
+    for prompt in medium_prompts:
+        cases.append(
+            BenchmarkCase(
+                prompt=prompt,
+                expected_tier=2,
+                input_tokens=70,
+                output_tokens=110,
+                latency_s=0.90,
+            )
+        )
+
+    for prompt in complex_prompts:
+        cases.append(
+            BenchmarkCase(
+                prompt=prompt,
+                expected_tier=3,
+                input_tokens=120,
+                output_tokens=190,
+                latency_s=1.35,
+            )
+        )
+
+    return cases
+
+
+def _mock_response(
+    prompt: str,
+    model_config,
+    cases_by_prompt: dict[str, BenchmarkCase],
+) -> Response:
+    """
+    Generate a deterministic provider response.
+
+    The benchmark intentionally does not call external providers.
+    """
+
+    case = cases_by_prompt[prompt]
+
+    return Response(
+        output_text=f"Benchmark response for: {prompt}",
+        input_tokens=case.input_tokens,
+        output_tokens=case.output_tokens,
+        latency_s=case.latency_s,
+        cost_usd=model_config.cost_for(
+            case.input_tokens,
+            case.output_tokens,
+        ),
+        model_name=model_config.name,
+        provider=model_config.provider.value,
+        error=None,
+        error_type=None,
+    )
+
+
+def _percentile(values: list[float], percentile: float) -> float:
+    """Calculate a percentile using linear interpolation."""
+
+    if not values:
+        return 0.0
+
+    if len(values) == 1:
+        return values[0]
+
+    ordered = sorted(values)
+
+    rank = (len(ordered) - 1) * percentile
+    lower = int(rank)
+    upper = min(lower + 1, len(ordered))
+    weight = rank - lower
+
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * weight
+
+
+def _round(value: float) -> float:
+    """Round benchmark floating-point values consistently."""
+
+    return round(value, 8)
+
+
+def _calculate_metrics(
+    records: list[BenchmarkRecord],
+) -> dict:
+    """Calculate aggregate benchmark metrics."""
+
+    total = len(records)
+
+    if total == 0:
+        raise ValueError("Benchmark produced no records.")
+
+    correct = sum(record.expected_tier == record.predicted_tier for record in records)
+
+    successful = sum(record.success for record in records)
+
+    fallback_count = sum(record.used_fallback for record in records)
+
+    latencies = [record.latency_s for record in records]
+
+    total_input_tokens = sum(record.input_tokens for record in records)
+
+    total_output_tokens = sum(record.output_tokens for record in records)
+
+    total_tokens = sum(record.total_tokens for record in records)
+
+    total_cost = sum(record.cost_usd for record in records)
+
+    total_baseline = sum(record.baseline_cost_usd for record in records)
+
+    total_savings = sum(record.savings_usd for record in records)
+
+    return {
+        "requests": total,
+        "routing_accuracy": _round(correct / total),
+        "successful_requests": successful,
+        "failed_requests": total - successful,
+        "success_rate": _round(successful / total),
+        "failure_rate": _round((total - successful) / total),
+        "fallback_requests": fallback_count,
+        "fallback_rate": _round(fallback_count / total),
+        "latency_s": {
+            "average": _round(statistics.mean(latencies)),
+            "p50": _round(_percentile(latencies, 0.50)),
+            "p95": _round(_percentile(latencies, 0.95)),
+            "p99": _round(_percentile(latencies, 0.99)),
+            "min": _round(min(latencies)),
+            "max": _round(max(latencies)),
+        },
+        "tokens": {
+            "input": total_input_tokens,
+            "output": total_output_tokens,
+            "total": total_tokens,
+        },
+        "cost_usd": {
+            "actual": _round(total_cost),
+            "average_per_request": _round(total_cost / total),
+            "gpt4o_baseline": _round(total_baseline),
+            "estimated_savings": _round(total_savings),
+            "estimated_savings_rate": (
+                _round(total_savings / total_baseline) if total_baseline else 0.0
+            ),
+        },
+    }
+
+
+def _calculate_tier_metrics(
+    records: list[BenchmarkRecord],
+) -> dict[str, dict]:
+    """Calculate metrics separately for each expected complexity tier."""
+
+    result: dict[str, dict] = {}
+
+    for tier in (1, 2, 3):
+        tier_records = [record for record in records if record.expected_tier == tier]
+
+        if not tier_records:
+            continue
+
+        total = len(tier_records)
+
+        correct = sum(
+            record.expected_tier == record.predicted_tier for record in tier_records
+        )
+
+        result[str(tier)] = {
+            "requests": total,
+            "routing_accuracy": _round(correct / total),
+            "successful_requests": sum(record.success for record in tier_records),
+            "fallback_requests": sum(record.used_fallback for record in tier_records),
+            "average_latency_s": _round(
+                statistics.mean(record.latency_s for record in tier_records)
+            ),
+            "total_cost_usd": _round(sum(record.cost_usd for record in tier_records)),
+        }
+
+    return result
+
+
+def _serialize_record(
+    record: BenchmarkRecord,
+) -> dict:
+    """Convert a benchmark record to JSON-compatible data."""
+
+    return {
+        "request_id": record.request_id,
+        "prompt": record.prompt,
+        "expected_tier": record.expected_tier,
+        "predicted_tier": record.predicted_tier,
+        "primary_model": record.primary_model,
+        "routed_model": record.routed_model,
+        "used_fallback": record.used_fallback,
+        "success": record.success,
+        "error_type": record.error_type,
+        "input_tokens": record.input_tokens,
+        "output_tokens": record.output_tokens,
+        "total_tokens": record.total_tokens,
+        "latency_s": _round(record.latency_s),
+        "cost_usd": _round(record.cost_usd),
+        "baseline_cost_usd": _round(record.baseline_cost_usd),
+        "savings_usd": _round(record.savings_usd),
+    }
+
+
+def run_benchmark(
+    cases: list[BenchmarkCase] | None = None,
+) -> dict:
+    """
+    Execute the deterministic routing benchmark.
+
+    Provider execution is mocked. Complexity classification and routing
+    policy are exercised through the real application code.
+    """
+
+    # Important:
+    # None means "use the default benchmark".
+    # [] means "the caller explicitly supplied zero cases".
+    if cases is None:
+        cases = build_benchmark_cases()
+
+    if not cases:
+        raise ValueError("Benchmark cases cannot be empty.")
+
+    cases_by_prompt = {case.prompt: case for case in cases}
+
+    records: list[BenchmarkRecord] = []
+
+    def fake_send_request(
+        prompt: str,
+        model_config,
+    ) -> Response:
+        return _mock_response(
+            prompt,
+            model_config,
+            cases_by_prompt,
+        )
+
+    with patch(
+        "src.routing.send_request",
+        side_effect=fake_send_request,
+    ):
+        for case in cases:
+            result: RoutingResult = route_request(case.prompt)
+
+            primary_model = (
+                result.routed_model
+                if not result.used_fallback
+                else _primary_model_for_tier(case.expected_tier)
+            )
+
+            baseline_cost = GPT4O_MODEL.cost_for(
+                case.input_tokens,
+                case.output_tokens,
+            )
+
+            savings = baseline_cost - result.response.cost_usd
+
+            records.append(
+                BenchmarkRecord(
+                    request_id=result.request_id,
+                    prompt=case.prompt,
+                    expected_tier=case.expected_tier,
+                    predicted_tier=result.tier,
+                    primary_model=primary_model,
+                    routed_model=result.routed_model,
+                    used_fallback=result.used_fallback,
+                    success=result.response.error is None,
+                    error_type=result.response.error_type,
+                    input_tokens=result.response.input_tokens,
+                    output_tokens=result.response.output_tokens,
+                    total_tokens=result.response.total_tokens,
+                    latency_s=result.response.latency_s,
+                    cost_usd=result.response.cost_usd,
+                    baseline_cost_usd=baseline_cost,
+                    savings_usd=savings,
+                )
+            )
+
+    metrics = _calculate_metrics(records)
+
+    result = {
+        "benchmark": {
+            "name": "LLM Cost Autopilot Routing Benchmark",
+            "version": "2.0",
+            "provider_calls": "mocked",
+            "deterministic": True,
+            "cases": len(cases),
+        },
+        "metrics": metrics,
+        "by_tier": _calculate_tier_metrics(records),
+        "records": [_serialize_record(record) for record in records],
+    }
+
+    RESULTS_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    RESULTS_PATH.write_text(
+        json.dumps(
+            result,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    return result
+
+
+def _primary_model_for_tier(
+    tier: int,
+) -> str:
+    """Return the configured primary model for a benchmark tier."""
+
+    routing_config = Path(__file__).resolve().parent.parent / "config" / "routing.yaml"
+
+    import yaml
+
+    with routing_config.open(encoding="utf-8") as file:
+        data = yaml.safe_load(file)
+
+    return data["routing"][tier]
+
+
+def main() -> None:
+    """Run the benchmark from the command line."""
+
+    result = run_benchmark()
+
+    metrics = result["metrics"]
+    cost = metrics["cost_usd"]
+    latency = metrics["latency_s"]
+
+    print()
+    print("=" * 60)
+    print("LLM COST AUTOPILOT — PHASE 2C BENCHMARK")
+    print("=" * 60)
+
+    print(f"Requests:             {metrics['requests']}")
+    print(f"Routing accuracy:     {metrics['routing_accuracy']:.2%}")
+    print(f"Success rate:         {metrics['success_rate']:.2%}")
+    print(f"Fallback rate:        {metrics['fallback_rate']:.2%}")
+
+    print()
+    print("Latency")
+    print(f"  Average:            {latency['average']:.4f}s")
+    print(f"  P50:                {latency['p50']:.4f}s")
+    print(f"  P95:                {latency['p95']:.4f}s")
+    print(f"  P99:                {latency['p99']:.4f}s")
+
+    print()
+    print("Tokens")
+    print(f"  Input:              {metrics['tokens']['input']}")
+    print(f"  Output:             {metrics['tokens']['output']}")
+    print(f"  Total:              {metrics['tokens']['total']}")
+
+    print()
+    print("Cost")
+    print(f"  Actual:             ${cost['actual']:.8f}")
+    print(f"  Average/request:    ${cost['average_per_request']:.8f}")
+    print(f"  GPT-4o baseline:    ${cost['gpt4o_baseline']:.8f}")
+    print(f"  Estimated savings:  ${cost['estimated_savings']:.8f}")
+    print(f"  Savings rate:       {cost['estimated_savings_rate']:.2%}")
+
+    print()
+    print(f"Results saved to: {RESULTS_PATH}")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()

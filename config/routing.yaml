@@ -1,0 +1,23 @@
+# Complexity-based routing for LLM Cost Autopilot.
+#
+# Values must match keys in src/models/registry.py.
+#
+# Tier 1: simple requests  -> Mistral
+# Tier 2: moderate requests -> Groq
+# Tier 3: complex requests -> Groq
+#
+# Groq is currently the highest-quality live model in this registry.
+# OpenAI/GPT-4o remains pricing-only and is not used for live traffic.
+
+routing:
+  1: mistral-small
+  2: groq-gpt-oss-20b
+  3: groq-gpt-oss-20b
+
+# If the primary model fails, route the request to the other
+# live provider instead of relying on an unavailable local provider.
+
+fallback:
+  1: groq-gpt-oss-20b
+  2: mistral-small
+  3: mistral-small
