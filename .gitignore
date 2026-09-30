@@ -13,3 +13,4 @@ data/cost_savings_report.md
 data/report_charts/
 !data/.gitkeep
 benchmark/results/*.db
+.streamlit/secrets.toml
