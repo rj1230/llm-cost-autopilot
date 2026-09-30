@@ -1,181 +1,188 @@
+
 # LLM Cost Autopilot
 
-An intelligent routing layer that sits in front of multiple LLM providers,
-scores each incoming request's complexity, routes it to the cheapest model
-capable of handling it, verifies that decision against the best model in the
-background, and escalates + learns from its own mistakes.
+**Cost-aware LLM routing with async quality verification, escalation, and observability.**
 
-**Result on a 400-request test run: 52.6% lower cost than sending everything
-to GPT-4o, with 86.9% average agreement on the requests it double-checked
-itself.** Full narrative + engineering trade-offs: [`CASE_STUDY.md`](CASE_STUDY.md).
-Current numbers regenerate any time via `python -m scripts.generate_report`.
+LLM Cost Autopilot is an intelligent routing layer that sits in front of multiple LLM providers.
+It classifies each request's complexity, routes it to the cheapest model likely to handle it well,
+verifies lower-cost responses in the background, and escalates or learns from disagreements.
 
-## Status — all 6 phases built
+**Result on a 400-request benchmark:** **52.6% lower cost** than routing every request to GPT-4o,
+with **86.9% average agreement** on self-verified responses.
 
-- [x] Phase 1 — Unified Model Interface
-- [x] Phase 2 — Complexity Classifier
-- [x] Phase 3 — Async Quality Verification Loop
-- [x] Phase 4 — Logging + Cost Dashboard
-- [x] Phase 5 — FastAPI Service
-- [x] Phase 6 — Portfolio Polish (load test, cost report, case study)
+The full engineering narrative, benchmark methodology, and trade-offs are in  
+[`CASE_STUDY.md`](https://github.com/rj1230/llm-cost-autopilot/blob/main/CASE_STUDY.md).
 
-## Quick start
+## How It Works
+
+```text
+Incoming request
+      ↓
+Complexity classifier
+      ↓
+Tier → model routing (YAML-configurable)
+      ↓
+Selected provider responds
+      ↓
+Cheap-tier response sent to caller
+      ↓
+Background verification against a stronger model
+      ↓
+Agreement / disagreement
+      ├── Agreement → logged for quality tracking
+      └── Disagreement → escalation + feedback example for future retraining
+```
+
+The system optimizes for a practical production constraint: use expensive frontier models only
+where their additional quality is actually needed, while retaining a verification path to detect
+when cheaper routing was wrong.
+
+## Key Results
+
+| Metric | Result |
+|---|---|
+| Cost reduction vs. GPT-4o baseline | **52.6%** |
+| Verification agreement rate | **86.9%** |
+| Benchmark size | 400 requests |
+| Classifier held-out accuracy | 90.7% |
+| Tests | 17 offline / mocked tests |
+
+Results are reproducible:
 
 ```bash
-python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # macOS/Linux
+python -m scripts.generate_report
+```
 
-pip install -r requirements.txt
-cp .env.example .env         # add your OpenAI / Anthropic keys
+## Features
 
-# optional: for the local model
-ollama pull llama3.1 && ollama serve
+### 1. Unified Model Interface
 
-# build the classifier (or skip - data/classifier.joblib already ships trained)
+A single `send_request(prompt, model_config)` interface works consistently across:
+
+- OpenAI
+- Anthropic
+- Local Ollama
+
+Every provider returns the same normalized `Response` object, so routing, logging, verification,
+and billing logic do not need provider-specific branches.
+
+The model registry includes real per-token pricing for:
+
+- GPT-4o
+- GPT-4o-mini
+- Claude Sonnet 4.5
+- Claude Haiku 4.5
+- Local Llama
+
+Run provider tests:
+
+```bash
+python -m tests.test_providers
+```
+
+### 2. Complexity Classifier
+
+Incoming prompts are scored using nine heuristic features, including prompt length, keyword signals,
+and structural indicators. A Random Forest classifier assigns each request to a routing tier.
+
+- 215-prompt labeled dataset
+- 9 heuristic features
+- 90.7% held-out classification accuracy
+- YAML-based tier-to-model mapping
+- Routing rules editable without redeployment
+
+Rebuild or validate the classifier:
+
+```bash
 python -m data.generate_dataset
 python -m src.classifier.train
-
-# try it
-python -m scripts.run_single_request "Summarize the following: ..." --sync
-
-# run the API
-uvicorn src.api.main:app --reload
-
-# run the dashboard (seed synthetic demo data first if you want it populated)
-python -m scripts.seed_demo_data
-streamlit run dashboard/app.py
-
-# or run everything in Docker
-docker compose up
+python -m scripts.check_routing_offline
 ```
 
-## What's built, phase by phase
+The trained classifier ships as `data/classifier.joblib`, so the project runs without needing to
+retrain immediately.
 
-**Phase 1 — Unified Model Interface** (`src/models/`, `src/providers/`,
-`src/client.py`) - one `send_request(prompt, model_config)` call that works
-identically across OpenAI, Anthropic, and local Ollama, always returning the
-same `Response` shape. Registry ships with real per-token pricing for GPT-4o,
-GPT-4o-mini, Claude Sonnet 4.5, Claude Haiku 4.5, and a free local Llama.
-Test: `python -m tests.test_providers`.
+### 3. Async Quality Verification
 
-**Phase 2 — Complexity Classifier** (`src/classifier/`, `data/
-generate_dataset.py`, `config/routing.yaml`) - a 215-prompt labeled dataset
-(templated, meant to be hand-reviewed before training), 9 heuristic features,
-a random forest hitting **90.7% held-out accuracy**, and a YAML tier→model
-map editable with no redeploy. Test: `python -m src.classifier.train`,
-`python -m scripts.check_routing_offline`.
+Cheap-tier responses are returned immediately. In the background, the same prompt is sent to a
+stronger tier-3 model and the two responses are compared using a task-aware scoring strategy:
 
-**Phase 3 — Async Quality Verification Loop** (`src/verification/`) - after
-a cheap-tier response goes out, a background thread re-sends the prompt to
-the tier-3 model and scores agreement with a task-matched method (exact
-label match for classification, word-overlap for extraction, LLM-as-judge
-for everything else). A real disagreement gets logged, escalated, and fed
-back as a new training example; `src/verification/retrain_weekly.py`
-retrains on accumulated feedback. 15 unit tests + a real mocked integration
-run: `python -m unittest tests.test_verification -v`.
+| Task type | Verification method |
+|---|---|
+| Classification | Exact label match |
+| Extraction | Word overlap |
+| Summarization / general generation | LLM-as-judge |
 
-**Phase 4 — Logging + Cost Dashboard** (`src/logging_db.py`, `src/stats.py`,
-`dashboard/app.py`) - every routed request lands a row in SQLite (prompt
-*hash* only, never the prompt itself); the Streamlit dashboard shows the
-savings-% headline metric, cost per day, routing distribution, quality score
-distribution, and escalation rate over time. Test: `python -m unittest
-tests.test_logging_and_stats -v`, then `streamlit run dashboard/app.py`.
+When disagreement exceeds the configured threshold, the system:
 
-**Phase 5 — FastAPI Service** (`src/api/`, `Dockerfile`,
-`docker-compose.yml`) - `POST /v1/completions` (router picks the model, the
-caller doesn't), `GET /v1/models`, `GET /v1/stats`, `PUT /v1/routing-config`
-(live-editable, no redeploy). `docker-compose.yml` runs the API, a Streamlit
-dashboard, and a `worker` service — see "Why no separate verification
-worker?" below for why that container handles weekly retraining rather than
-per-request verification.
+1. Logs the disagreement.
+2. Escalates the request.
+3. Stores the example as feedback for future classifier retraining.
 
-**Phase 6 — Portfolio Polish** (`scripts/load_test.py`, `scripts/
-generate_report.py`, `CASE_STUDY.md`) - sends 500-1,000 fresh prompts through
-the full pipeline, then turns `data/requests.db` into
-`data/cost_savings_report.md` + 4 chart PNGs in `data/report_charts/`. The
-case study write-up is [`CASE_STUDY.md`](CASE_STUDY.md).
-
-## Why no separate verification worker?
-
-The build guide's docker-compose step calls for "a background worker for
-async verification." Per-request verification here runs on a
-`ThreadPoolExecutor` *inside* the API process - it's already non-blocking and
-doesn't need its own container at this scale (a broker like Celery/Redis
-would be the honest way to split it out, and a solo project doesn't need that
-yet). What genuinely is a separate, independent, scheduled job is the weekly
-classifier retrain, so that's what the `worker` service in `docker-compose.yml`
-actually runs (`scripts/retrain_worker_loop.py`). More in `CASE_STUDY.md`.
-
-## Testing
+Weekly retraining is supported through:
 
 ```bash
-python -m unittest discover -s tests -v   # 17 tests, all offline/mocked
+python -m src.verification.retrain_weekly
 ```
 
-None of the tests call a real provider - `tests/test_verification.py` and
-`tests/test_logging_and_stats.py` mock `send_request` and use a temp SQLite
-DB respectively, so this runs in CI with no API keys.
+Run verification tests:
 
-## Project layout
-
-```
-llm-cost-autopilot/
-├── src/
-│   ├── config.py                  # loads .env
-│   ├── client.py                  # send_request(prompt, model_config)
-│   ├── routing.py                 # route_request[_with_verification]()
-│   ├── logging_db.py              # SQLite audit trail (Phase 4)
-│   ├── stats.py                   # dashboard/API query layer (Phase 4)
-│   ├── models/
-│   │   ├── registry.py            # ModelConfig + MODEL_REGISTRY
-│   │   └── response.py            # Response dataclass
-│   ├── providers/                 # openai / anthropic / ollama + base ABC
-│   ├── classifier/                # features, train, predict (Phase 2)
-│   ├── verification/               # task_type, thresholds, scoring,
-│   │                               # verifier, queue, feedback, retrain (Phase 3)
-│   └── api/
-│       ├── main.py                # FastAPI app
-│       └── schemas.py             # pydantic request/response models
-├── dashboard/
-│   └── app.py                     # Streamlit cost dashboard (Phase 4)
-├── config/
-│   └── routing.yaml               # tier -> model map
-├── scripts/
-│   ├── check_routing_offline.py   # Phase 2: no-API-call routing sanity check
-│   ├── run_single_request.py      # Phase 3: one real request through the pipeline
-│   ├── seed_demo_data.py          # Phase 4: synthetic data for an instant dashboard
-│   ├── retrain_worker_loop.py     # Phase 5: docker-compose worker entrypoint
-│   ├── load_test.py               # Phase 6: 500-1,000 real requests
-│   └── generate_report.py         # Phase 6: DB -> report + charts
-├── tests/
-│   ├── prompts.py, test_providers.py         # Phase 1
-│   ├── test_verification.py                  # Phase 3 (15 tests)
-│   └── test_logging_and_stats.py              # Phase 4 (2 tests)
-├── data/
-│   ├── generate_dataset.py        # builds labeled_dataset.csv
-│   ├── labeled_dataset.csv        # 215 labeled prompts (generated, ships pre-built)
-│   ├── classifier.joblib          # trained model (generated, ships pre-built)
-│   ├── requests.db                # SQLite audit trail (generated)
-│   ├── cost_savings_report.md     # Phase 6 output (generated)
-│   └── report_charts/             # Phase 6 chart PNGs (generated)
-├── Dockerfile
-├── docker-compose.yml             # api + worker + dashboard services
-├── requirements.txt
-├── .env.example
-├── CASE_STUDY.md                  # the portfolio write-up
-└── README.md                      # this file
+```bash
+python -m unittest tests.test_verification -v
 ```
 
-## Known limitations / next steps if you keep going
+### 4. Logging and Cost Dashboard
 
-- The classifier's features are heuristic (word/keyword counts), not a real
-  tokenizer or embedding - fine for V1's 80%+ bar, but an embedding-based
-  classifier would likely push accuracy higher on genuinely ambiguous prompts.
-- LLM-as-judge scoring (summarization/other) costs one extra API call per
-  verified request - fine at demo volume, worth watching at real scale.
-- No auth on the FastAPI service - add an API key dependency before exposing
-  this beyond localhost.
-- `data/requests.db` and the JSONL logs grow unbounded - add a retention/
-  archival job before running this for real for months at a time.
-# llm-cost-autopilot
+Every request is written to a SQLite audit trail. For privacy, the system stores a prompt hash,
+not the raw prompt.
+
+The Streamlit dashboard surfaces:
+
+- Total estimated cost savings
+- Cost over time
+- Routing distribution by model tier
+- Quality-score distribution
+- Escalation rate over time
+
+Seed demo data and launch the dashboard:
+
+```bash
+python -m scripts.seed_demo_data
+streamlit run dashboard/app.py
+```
+
+Run logging and analytics tests:
+
+```bash
+python -m unittest tests.test_logging_and_stats -v
+```
+
+### 5. FastAPI Service
+
+The service exposes an OpenAI-style completion endpoint while keeping model selection internal.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/v1/completions` | Route and complete a request |
+| `GET` | `/v1/models` | List available models |
+| `GET` | `/v1/stats` | Return routing and cost metrics |
+| `PUT` | `/v1/routing-config` | Update routing configuration live |
+
+Start the API:
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+### 6. Portfolio Polish and Reproducibility
+
+The repository includes a full evaluation workflow:
+
+- `scripts/load_test.py` — runs 500–1,000 fresh prompts through the pipeline
+- `scripts/generate_report.py` — turns `data/requests.db` into a Markdown report and charts
+- `CASE_STUDY.md` — documents architecture decisions, benchmark setup, and trade-offs
+
+Generated artifacts include:
+
+- `data/cost_savings_report.md`
+- Four report charts in `data/report_charts/`
