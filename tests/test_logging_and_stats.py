@@ -78,6 +78,7 @@ class TestLoggingAndStats(unittest.TestCase):
 
         r1_cost = mistral.cost_for(50, 20)
 
+        # Normal routing: raw T1 -> final T1.
         log_request(
             "r1",
             "extract x",
@@ -92,10 +93,14 @@ class TestLoggingAndStats(unittest.TestCase):
                 model="mistral-small",
             ),
             primary_model="mistral-small",
+            classifier_tier=1,
+            classification_confidence=0.98,
+            low_confidence=False,
         )
 
         r2_cost = groq.cost_for(100, 50)
 
+        # Normal routing: raw T2 -> final T2.
         log_request(
             "r2",
             "summarize y",
@@ -110,14 +115,18 @@ class TestLoggingAndStats(unittest.TestCase):
                 model="groq-gpt-oss-20b",
             ),
             primary_model="groq-gpt-oss-20b",
+            classifier_tier=2,
+            classification_confidence=0.96,
+            low_confidence=False,
         )
 
         r3_cost = groq.cost_for(80, 40)
 
+        # Confidence-aware promotion: raw T1 -> final T2.
         log_request(
             "r3",
             "fallback request",
-            1,
+            2,
             "groq-gpt-oss-20b",
             True,
             _fake_response(
@@ -128,10 +137,14 @@ class TestLoggingAndStats(unittest.TestCase):
                 model="groq-gpt-oss-20b",
             ),
             primary_model="mistral-small",
+            classifier_tier=1,
+            classification_confidence=0.80,
+            low_confidence=True,
         )
 
         r4_cost = gpt4o.cost_for(500, 300)
 
+        # Low-confidence T3 cannot be promoted beyond T3.
         log_request(
             "r4",
             "design a system",
@@ -146,6 +159,9 @@ class TestLoggingAndStats(unittest.TestCase):
                 model="gpt-4o",
             ),
             primary_model="gpt-4o",
+            classifier_tier=3,
+            classification_confidence=0.70,
+            low_confidence=True,
         )
 
         update_verification(
@@ -223,6 +239,57 @@ class TestLoggingAndStats(unittest.TestCase):
         self.assertAlmostEqual(
             summary.avg_quality_score,
             (0.95 + 0.40) / 2,
+        )
+
+        # --------------------------------------------------------------
+        # Phase 3D: classification observability
+        # --------------------------------------------------------------
+
+        self.assertAlmostEqual(
+            summary.average_classification_confidence,
+            (0.98 + 0.96 + 0.80 + 0.70) / 4,
+        )
+
+        # r3 and r4 are low-confidence.
+        self.assertEqual(
+            summary.low_confidence_count,
+            2,
+        )
+
+        self.assertAlmostEqual(
+            summary.low_confidence_rate,
+            0.5,
+        )
+
+        # Only r3 was actually promoted.
+        # r4 was low-confidence T3 but remained at T3.
+        self.assertEqual(
+            summary.promotion_count,
+            1,
+        )
+
+        self.assertAlmostEqual(
+            summary.promotion_rate,
+            0.25,
+        )
+
+        self.assertEqual(
+            summary.raw_tier_distribution,
+            {
+                "1": 2,
+                "2": 1,
+                "3": 1,
+            },
+        )
+
+        self.assertEqual(
+            summary.routing_transitions,
+            {
+                "1_to_1": 1,
+                "2_to_2": 1,
+                "1_to_2": 1,
+                "3_to_3": 1,
+            },
         )
 
     def test_fallback_attribution(self):
@@ -345,6 +412,31 @@ class TestLoggingAndStats(unittest.TestCase):
             },
         )
 
+        # Pre-Phase-3C rows have no classifier metadata.
+        self.assertIsNone(
+            summary.average_classification_confidence,
+        )
+
+        self.assertEqual(
+            summary.low_confidence_count,
+            0,
+        )
+
+        self.assertEqual(
+            summary.promotion_count,
+            0,
+        )
+
+        self.assertEqual(
+            summary.raw_tier_distribution,
+            {},
+        )
+
+        self.assertEqual(
+            summary.routing_transitions,
+            {},
+        )
+
         conn = sqlite3.connect(self.db_path)
 
         try:
@@ -368,6 +460,21 @@ class TestLoggingAndStats(unittest.TestCase):
 
         self.assertIn(
             "primary_model",
+            columns,
+        )
+
+        self.assertIn(
+            "classifier_tier",
+            columns,
+        )
+
+        self.assertIn(
+            "classification_confidence",
+            columns,
+        )
+
+        self.assertIn(
+            "low_confidence",
             columns,
         )
 
@@ -424,6 +531,40 @@ class TestLoggingAndStats(unittest.TestCase):
 
         self.assertIsNone(
             summary.avg_quality_score,
+        )
+
+        self.assertIsNone(
+            summary.average_classification_confidence,
+        )
+
+        self.assertEqual(
+            summary.low_confidence_count,
+            0,
+        )
+
+        self.assertEqual(
+            summary.low_confidence_rate,
+            0.0,
+        )
+
+        self.assertEqual(
+            summary.promotion_count,
+            0,
+        )
+
+        self.assertEqual(
+            summary.promotion_rate,
+            0.0,
+        )
+
+        self.assertEqual(
+            summary.raw_tier_distribution,
+            {},
+        )
+
+        self.assertEqual(
+            summary.routing_transitions,
+            {},
         )
 
 

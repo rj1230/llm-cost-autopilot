@@ -900,6 +900,9 @@ def load_requests(db_path: str) -> pd.DataFrame:
                 "error_type",
                 "primary_error_type",
                 "circuit_state",
+                "classifier_tier",
+                "classification_confidence",
+                "low_confidence",
             ]
 
             safe_columns = [column for column in requested_columns if column in columns]
@@ -940,6 +943,9 @@ def load_requests(db_path: str) -> pd.DataFrame:
         "error_type": None,
         "primary_error_type": None,
         "circuit_state": "unknown",
+        "classifier_tier": None,
+        "classification_confidence": None,
+        "low_confidence": 0,
     }
 
     for column, default in defaults.items():
@@ -954,15 +960,27 @@ def load_requests(db_path: str) -> pd.DataFrame:
 
     for column in [
         "tier",
+        "classifier_tier",
         "input_tokens",
         "output_tokens",
         "cost_usd",
         "latency_s",
         "quality_score",
+        "classification_confidence",
     ]:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
 
-    for column in ["used_fallback", "escalated", "verified"]:
+    frame["classifier_tier"] = (
+        frame["classifier_tier"]
+        .where(frame["classifier_tier"].isin([1, 2, 3]))
+    )
+
+    frame["classification_confidence"] = (
+        frame["classification_confidence"]
+        .clip(lower=0.0, upper=1.0)
+    )
+
+    for column in ["used_fallback", "escalated", "verified", "low_confidence"]:
         frame[column] = (
             pd.to_numeric(frame[column], errors="coerce")
             .fillna(0)
@@ -1229,16 +1247,42 @@ def render_playground() -> None:
         st.markdown("### Routing decision")
 
         tier = routing.get("tier", "—")
+        classifier_tier = routing.get("classifier_tier", "—")
+        classification_confidence = routing.get(
+            "classification_confidence",
+            None,
+        )
+        low_confidence = bool(routing.get("low_confidence", False))
         selected_model = routing.get("selected_model", "Unknown")
         cost_usd = float(routing.get("cost_usd", 0) or 0)
         latency_s = float(routing.get("latency_s", 0) or 0)
         verification = str(routing.get("verification", "unknown"))
         fallback_used = bool(routing.get("used_fallback", False))
 
+        confidence_display = (
+            f"{float(classification_confidence):.1%}"
+            if classification_confidence is not None
+            else "N/A"
+        )
+
+        promotion_display = (
+            "Promoted by safety policy"
+            if str(classifier_tier) != str(tier)
+            and classifier_tier != "—"
+            else "No promotion"
+        )
+
         render_routing_summary(
             [
                 ("Selected model", str(selected_model)),
-                ("Complexity tier", f"Tier {tier}"),
+                ("Raw ML tier", f"Tier {classifier_tier}"),
+                ("Classifier confidence", confidence_display),
+                (
+                    "Safety policy",
+                    "Low confidence" if low_confidence else "Normal confidence",
+                ),
+                ("Final routing tier", f"Tier {tier}"),
+                ("Routing transition", promotion_display),
                 ("Request cost", money(cost_usd)),
                 ("Latency", f"{latency_s:.3f}s"),
                 ("Verification", verification.replace("_", " ").title()),
@@ -1405,6 +1449,74 @@ total_fallbacks = (
     int(request_log["used_fallback"].sum()) if not request_log.empty else 0
 )
 
+# Phase 3D: confidence-aware routing observability.
+# Older records may not have classifier metadata, so analytics only
+# use rows where the raw classifier tier and confidence are available.
+classification_view = (
+    filtered[
+        filtered["classifier_tier"].notna()
+        & filtered["classification_confidence"].notna()
+    ].copy()
+    if not filtered.empty
+    else pd.DataFrame()
+)
+
+classification_total = len(classification_view)
+
+avg_classification_confidence = (
+    float(classification_view["classification_confidence"].mean())
+    if classification_total
+    else None
+)
+
+low_confidence_count = (
+    int(classification_view["low_confidence"].sum())
+    if classification_total
+    else 0
+)
+
+low_confidence_rate = safe_rate(
+    low_confidence_count,
+    classification_total,
+)
+
+promotion_mask = (
+    classification_view["classifier_tier"].astype(int)
+    != classification_view["tier"].astype(int)
+    if classification_total
+    else pd.Series(dtype=bool)
+)
+
+promotion_count = int(promotion_mask.sum()) if classification_total else 0
+
+promotion_rate = safe_rate(
+    promotion_count,
+    classification_total,
+)
+
+raw_tier_distribution = (
+    classification_view["classifier_tier"]
+    .astype(int)
+    .value_counts()
+    .sort_index()
+    .to_dict()
+    if classification_total
+    else {}
+)
+
+routing_transitions = (
+    (
+        classification_view["classifier_tier"].astype(int).astype(str)
+        + "_to_"
+        + classification_view["tier"].astype(int).astype(str)
+    )
+    .value_counts()
+    .sort_index()
+    .to_dict()
+    if classification_total
+    else {}
+)
+
 
 # ---------------------------------------------------------------------
 # Hero
@@ -1503,6 +1615,50 @@ with overview_tab:
             pct(view_fallback_rate),
             f"{view_fallbacks:,} fallback requests",
             "warning" if view_fallback_rate else "success",
+        )
+
+    render_section_label("Classifier safety observability")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        render_metric_card(
+            "Classifier confidence",
+            (
+                f"{avg_classification_confidence:.1%}"
+                if avg_classification_confidence is not None
+                else "N/A"
+            ),
+            f"{classification_total:,} requests with classifier metadata",
+            "info",
+        )
+
+    with c2:
+        render_metric_card(
+            "Low-confidence rate",
+            pct(low_confidence_rate),
+            f"{low_confidence_count:,} requests below 85% confidence",
+            "warning" if low_confidence_count else "success",
+        )
+
+    with c3:
+        render_metric_card(
+            "Safety promotions",
+            f"{promotion_count:,}",
+            f"{promotion_rate:.1%} of classified requests",
+            "warning" if promotion_count else "success",
+        )
+
+    with c4:
+        render_metric_card(
+            "Raw classifier tiers",
+            (
+                f"{raw_tier_distribution.get(1, 0):,} / "
+                f"{raw_tier_distribution.get(2, 0):,} / "
+                f"{raw_tier_distribution.get(3, 0):,}"
+            ),
+            "T1 / T2 / T3 before safety policy",
+            "primary",
         )
 
     render_section_label("Cost and performance")
@@ -1678,6 +1834,112 @@ with routing_tab:
                 width="stretch",
                 hide_index=True,
             )
+
+        st.markdown("### Classifier decision observability")
+
+        obs_left, obs_right = st.columns(2)
+
+        with obs_left:
+            st.markdown("#### Raw classifier tier distribution")
+
+            if classification_total:
+                raw_distribution = pd.DataFrame(
+                    [
+                        {
+                            "Raw tier": f"Tier {tier}",
+                            "Requests": raw_tier_distribution.get(tier, 0),
+                        }
+                        for tier in [1, 2, 3]
+                    ]
+                )
+
+                fig = px.bar(
+                    raw_distribution,
+                    x="Raw tier",
+                    y="Requests",
+                    text="Requests",
+                )
+
+                fig.update_traces(
+                    textposition="outside",
+                    textfont_color="#e9edf4",
+                )
+
+                style_fig(fig, height=300)
+
+                st.plotly_chart(fig, width="stretch")
+            else:
+                render_empty_state(
+                    "No classifier metadata",
+                    "Classifier observability appears for Phase 3C+ requests.",
+                )
+
+        with obs_right:
+            st.markdown("#### Raw → final routing transitions")
+
+            if routing_transitions:
+                transition_data = pd.DataFrame(
+                    [
+                        {
+                            "Transition": key.replace("_to_", " → "),
+                            "Requests": value,
+                        }
+                        for key, value in routing_transitions.items()
+                    ]
+                )
+
+                fig = px.bar(
+                    transition_data,
+                    x="Requests",
+                    y="Transition",
+                    orientation="h",
+                    text="Requests",
+                )
+
+                fig.update_traces(
+                    textposition="outside",
+                    textfont_color="#e9edf4",
+                )
+
+                style_fig(
+                    fig,
+                    height=300,
+                    margin=dict(l=10, r=35, t=10, b=10),
+                )
+
+                st.plotly_chart(fig, width="stretch")
+            else:
+                render_empty_state(
+                    "No routing transitions",
+                    "Transitions appear when classifier metadata is available.",
+                )
+
+        st.markdown("#### Routing decision chain")
+
+        with st.container(border=True):
+            st.markdown(
+                """
+                **Raw ML prediction**
+                → **classifier confidence**
+                → **confidence safety policy**
+                → **final routing tier**
+                → **provider**
+                → **fallback protection**
+                → **quality verification**
+                """
+            )
+
+            if promotion_count:
+                st.info(
+                    f"{promotion_count:,} classified requests were promoted "
+                    "to a safer routing tier because the classifier confidence "
+                    "was below the 85% safety threshold."
+                )
+            else:
+                st.caption(
+                    "No confidence-driven tier promotions are present in the "
+                    "selected view."
+                )
 
         st.markdown("### Complexity-tier traffic")
 
@@ -2039,6 +2301,9 @@ with audit_tab:
             "error_type",
             "primary_error_type",
             "circuit_state",
+            "classifier_tier",
+            "classification_confidence",
+            "low_confidence",
         ]
 
         audit_view = filtered[audit_columns].head(MAX_AUDIT_ROWS).copy()
@@ -2050,6 +2315,17 @@ with audit_tab:
         audit_view["cost_usd"] = audit_view["cost_usd"].round(8)
         audit_view["latency_s"] = audit_view["latency_s"].round(4)
         audit_view["quality_score"] = audit_view["quality_score"].round(4)
+        audit_view["classification_confidence"] = (
+            audit_view["classification_confidence"].round(4)
+        )
+
+        audit_view = audit_view.rename(
+            columns={
+                "classifier_tier": "raw_classifier_tier",
+                "classification_confidence": "classifier_confidence",
+                "low_confidence": "low_confidence_policy",
+            }
+        )
 
         st.download_button(
             "Download audit CSV",
@@ -2093,6 +2369,7 @@ with audit_tab:
                 ui [label="Streamlit Playground"];
                 api [label="FastAPI Gateway"];
                 classifier [label="Complexity Classifier"];
+                confidence [label="Confidence Check"];
                 router [label="Routing Policy"];
                 provider [label="Mistral / Groq"];
                 fallback [label="Fallback Protection"];
@@ -2102,7 +2379,9 @@ with audit_tab:
 
                 ui -> api;
                 api -> classifier;
-                classifier -> router;
+                classifier -> confidence;
+                confidence -> router [label="safe tier"];
+                confidence -> router [label="promote if low confidence"];
                 router -> provider;
                 provider -> fallback [label="failure"];
                 provider -> verifier;

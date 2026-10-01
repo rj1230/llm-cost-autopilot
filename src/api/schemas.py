@@ -69,7 +69,19 @@ class RoutingMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     request_id: str
+
+    # Final routing decision after the confidence-aware safety policy.
     tier: int = Field(..., ge=1, le=3)
+
+    # Raw ML classifier decision before safety promotion.
+    classifier_tier: int = Field(..., ge=1, le=3)
+
+    # Probability assigned to the raw classifier prediction.
+    classification_confidence: float = Field(..., ge=0, le=1)
+
+    # Whether the classifier prediction was below the confidence threshold.
+    low_confidence: bool
+
     selected_model: str
     reasoning: str
     used_fallback: bool

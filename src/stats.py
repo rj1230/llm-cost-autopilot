@@ -28,6 +28,16 @@ class DashboardSummary:
     escalation_count: int
     escalation_rate_of_verified: float
     avg_quality_score: float | None
+
+    # Classification observability.
+    average_classification_confidence: float | None
+    low_confidence_count: int
+    low_confidence_rate: float
+    promotion_count: int
+    promotion_rate: float
+    raw_tier_distribution: dict[str, int]
+    routing_transitions: dict[str, int]
+
     daily_cost: list[dict] = field(default_factory=list)
     quality_scores: list[float] = field(default_factory=list)
 
@@ -64,13 +74,20 @@ def _empty_summary() -> DashboardSummary:
         escalation_count=0,
         escalation_rate_of_verified=0.0,
         avg_quality_score=None,
+        average_classification_confidence=None,
+        low_confidence_count=0,
+        low_confidence_rate=0.0,
+        promotion_count=0,
+        promotion_rate=0.0,
+        raw_tier_distribution={},
+        routing_transitions={},
         daily_cost=[],
         quality_scores=[],
     )
 
 
 def get_summary() -> DashboardSummary:
-    """Calculate dashboard routing, cost, fallback, and quality metrics."""
+    """Calculate dashboard routing, cost, fallback, quality, and classifier metrics."""
 
     if not Path(DB_PATH).exists():
         return _empty_summary()
@@ -84,6 +101,7 @@ def get_summary() -> DashboardSummary:
             """
             SELECT
                 timestamp,
+                tier,
                 primary_model,
                 routed_model,
                 input_tokens,
@@ -92,7 +110,10 @@ def get_summary() -> DashboardSummary:
                 quality_score,
                 escalated,
                 verified,
-                used_fallback
+                used_fallback,
+                classifier_tier,
+                classification_confidence,
+                low_confidence
             FROM request_log
             """
         ).fetchall()
@@ -113,29 +134,52 @@ def get_summary() -> DashboardSummary:
 
     savings = hypothetical_cost - total_cost
 
-    savings_pct = savings / hypothetical_cost * 100 if hypothetical_cost > 0 else 0.0
+    savings_pct = (
+        savings / hypothetical_cost * 100
+        if hypothetical_cost > 0
+        else 0.0
+    )
 
     routing_distribution: dict[str, int] = {}
 
     for row in rows:
         model = row["routed_model"]
 
-        routing_distribution[model] = routing_distribution.get(model, 0) + 1
+        routing_distribution[model] = (
+            routing_distribution.get(model, 0) + 1
+        )
 
     primary_model_distribution: dict[str, int] = {}
 
     for row in rows:
         model = row["primary_model"]
 
-        primary_model_distribution[model] = primary_model_distribution.get(model, 0) + 1
+        primary_model_distribution[model] = (
+            primary_model_distribution.get(model, 0) + 1
+        )
 
-    fallback_count = sum(int(row["used_fallback"] or 0) for row in rows)
+    fallback_count = sum(
+        int(row["used_fallback"] or 0)
+        for row in rows
+    )
 
-    fallback_rate = fallback_count / total_requests if total_requests else 0.0
+    fallback_rate = (
+        fallback_count / total_requests
+        if total_requests
+        else 0.0
+    )
 
-    verified_rows = [row for row in rows if row["verified"]]
+    verified_rows = [
+        row
+        for row in rows
+        if row["verified"]
+    ]
 
-    escalated_rows = [row for row in verified_rows if row["escalated"]]
+    escalated_rows = [
+        row
+        for row in verified_rows
+        if row["escalated"]
+    ]
 
     quality_scores = [
         row["quality_score"]
@@ -143,7 +187,87 @@ def get_summary() -> DashboardSummary:
         if row["quality_score"] is not None
     ]
 
-    avg_quality = sum(quality_scores) / len(quality_scores) if quality_scores else None
+    avg_quality = (
+        sum(quality_scores) / len(quality_scores)
+        if quality_scores
+        else None
+    )
+
+    # ------------------------------------------------------------------
+    # Classification observability
+    # ------------------------------------------------------------------
+    #
+    # Only rows with classifier_tier and confidence are included.
+    # This keeps historical rows from pre-Phase-3C migrations from
+    # being assigned invented classifier metadata.
+    #
+    classifier_rows = [
+        row
+        for row in rows
+        if row["classifier_tier"] is not None
+        and row["classification_confidence"] is not None
+    ]
+
+    classification_confidences = [
+        float(row["classification_confidence"])
+        for row in classifier_rows
+    ]
+
+    average_classification_confidence = (
+        sum(classification_confidences)
+        / len(classification_confidences)
+        if classification_confidences
+        else None
+    )
+
+    low_confidence_count = sum(
+        int(row["low_confidence"] or 0)
+        for row in classifier_rows
+    )
+
+    classification_count = len(classifier_rows)
+
+    low_confidence_rate = (
+        low_confidence_count / classification_count
+        if classification_count
+        else 0.0
+    )
+
+    # A promotion is an actual change in routing tier caused by the
+    # confidence-aware policy. This is intentionally different from
+    # low_confidence_count because T3 cannot be promoted beyond T3.
+    promotion_count = sum(
+        1
+        for row in classifier_rows
+        if int(row["classifier_tier"]) != int(row["tier"])
+    )
+
+    promotion_rate = (
+        promotion_count / classification_count
+        if classification_count
+        else 0.0
+    )
+
+    raw_tier_distribution: dict[str, int] = {}
+
+    for row in classifier_rows:
+        tier = str(int(row["classifier_tier"]))
+
+        raw_tier_distribution[tier] = (
+            raw_tier_distribution.get(tier, 0) + 1
+        )
+
+    routing_transitions: dict[str, int] = {}
+
+    for row in classifier_rows:
+        transition = (
+            f"{int(row['classifier_tier'])}"
+            f"_to_{int(row['tier'])}"
+        )
+
+        routing_transitions[transition] = (
+            routing_transitions.get(transition, 0) + 1
+        )
 
     daily: dict[str, dict] = {}
 
@@ -180,9 +304,20 @@ def get_summary() -> DashboardSummary:
         fallback_rate=fallback_rate,
         escalation_count=len(escalated_rows),
         escalation_rate_of_verified=(
-            len(escalated_rows) / len(verified_rows) if verified_rows else 0.0
+            len(escalated_rows) / len(verified_rows)
+            if verified_rows
+            else 0.0
         ),
         avg_quality_score=avg_quality,
+        average_classification_confidence=(
+            average_classification_confidence
+        ),
+        low_confidence_count=low_confidence_count,
+        low_confidence_rate=low_confidence_rate,
+        promotion_count=promotion_count,
+        promotion_rate=promotion_rate,
+        raw_tier_distribution=raw_tier_distribution,
+        routing_transitions=routing_transitions,
         daily_cost=daily_cost,
         quality_scores=quality_scores,
     )

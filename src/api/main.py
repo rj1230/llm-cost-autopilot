@@ -277,6 +277,9 @@ def create_completion(
             "completion_failed",
             request_id=request_id,
             tier=result.tier,
+            classifier_tier=result.classifier_tier,
+            classification_confidence=result.classification_confidence,
+            low_confidence=result.low_confidence,
             primary_model=result.primary_model,
             routed_model=result.routed_model,
             used_fallback=result.used_fallback,
@@ -306,6 +309,12 @@ def create_completion(
         3: "classified as complex - routed straight to the highest-quality model",
     }[result.tier]
 
+    if result.classifier_tier != result.tier:
+        reasoning += (
+            " (low-confidence classifier prediction was promoted "
+            "to a safer routing tier)"
+        )
+
     if result.used_fallback:
         reasoning += (
             " (primary model for this tier was unavailable - used the fallback)"
@@ -315,6 +324,9 @@ def create_completion(
         "completion_succeeded",
         request_id=request_id,
         tier=result.tier,
+        classifier_tier=result.classifier_tier,
+        classification_confidence=result.classification_confidence,
+        low_confidence=result.low_confidence,
         primary_model=result.primary_model,
         routed_model=result.routed_model,
         used_fallback=result.used_fallback,
@@ -340,6 +352,9 @@ def create_completion(
         routing=RoutingMetadata(
             request_id=request_id,
             tier=result.tier,
+            classifier_tier=result.classifier_tier,
+            classification_confidence=result.classification_confidence,
+            low_confidence=result.low_confidence,
             selected_model=result.routed_model,
             reasoning=reasoning,
             used_fallback=result.used_fallback,
@@ -375,7 +390,7 @@ def list_models() -> list[ModelInfo]:
     dependencies=[Depends(require_api_key)],
 )
 def stats() -> dict:
-    """Return operational cost and routing statistics."""
+    """Return operational cost, routing, and classifier statistics."""
 
     summary = get_summary()
 
@@ -399,12 +414,40 @@ def stats() -> dict:
             2,
         ),
         "routing_distribution": summary.routing_distribution,
+        "primary_model_distribution": summary.primary_model_distribution,
+        "fallback_count": summary.fallback_count,
+        "fallback_rate": round(
+            summary.fallback_rate,
+            4,
+        ),
         "escalation_count": summary.escalation_count,
         "escalation_rate_of_verified": round(
             summary.escalation_rate_of_verified,
             4,
         ),
         "avg_quality_score": summary.avg_quality_score,
+        "classification_observability": {
+            "average_confidence": (
+                round(
+                    summary.average_classification_confidence,
+                    4,
+                )
+                if summary.average_classification_confidence is not None
+                else None
+            ),
+            "low_confidence_count": summary.low_confidence_count,
+            "low_confidence_rate": round(
+                summary.low_confidence_rate,
+                4,
+            ),
+            "promotion_count": summary.promotion_count,
+            "promotion_rate": round(
+                summary.promotion_rate,
+                4,
+            ),
+            "raw_tier_distribution": summary.raw_tier_distribution,
+            "routing_transitions": summary.routing_transitions,
+        },
     }
 
 
