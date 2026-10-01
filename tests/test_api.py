@@ -309,3 +309,31 @@ def test_completion_maps_unknown_error_to_500(monkeypatch):
     assert data["error_type"] == "unknown"
     assert data["detail"] == "An unexpected internal error occurred."
     assert "PRIVATE_INTERNAL_PROVIDER_ERROR" not in str(data)
+def test_protected_endpoint_rejects_non_bearer_authentication(
+    monkeypatch,
+):
+    monkeypatch.setenv("API_KEY", "test-api-key")
+
+    response = client.get(
+        "/v1/models",
+        headers={
+            "Authorization": "Basic dGVzdC1hcGkta2V5",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_protected_endpoint_rejects_empty_bearer_token(
+    monkeypatch,
+):
+    monkeypatch.setenv("API_KEY", "test-api-key")
+
+    response = client.get(
+        "/v1/models",
+        headers={
+            "Authorization": "Bearer ",
+        },
+    )
+
+    assert response.status_code == 401
