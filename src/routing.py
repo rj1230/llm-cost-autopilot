@@ -2,9 +2,13 @@
 Request routing for LLM Cost Autopilot.
 
 route_request(prompt):
-    classify complexity -> select primary model -> check circuit ->
+    classify complexity -> apply confidence-aware routing ->
+    select primary model -> check circuit ->
     call provider with timeout -> record provider health ->
     optionally fall back -> persist audit metadata -> return result.
+
+Confidence-aware routing keeps the raw classifier prediction separate
+from the final routing tier used for provider selection.
 """
 
 import uuid
@@ -15,7 +19,7 @@ from pathlib import Path
 import yaml
 
 from src import config
-from src.classifier.predict import classify_complexity
+from src.classifier.predict import predict_complexity
 from src.client import send_request
 from src.logging_db import log_request
 from src.models.registry import get_model
@@ -39,12 +43,30 @@ _CIRCUITS = CircuitRegistry(
 
 @dataclass
 class RoutingResult:
+    """
+    Result of one routing attempt.
+
+    `tier` is the final routing tier used for provider selection.
+
+    `classifier_tier` is the raw tier predicted by the ML classifier
+    before confidence-aware safety adjustment.
+
+    `classification_confidence` is the classifier probability assigned
+    to the raw predicted tier.
+
+    `low_confidence` indicates whether the confidence policy adjusted
+    the routing decision.
+    """
+
     request_id: str
     response: Response
     tier: int
     primary_model: str
     routed_model: str
     used_fallback: bool
+    classifier_tier: int
+    classification_confidence: float
+    low_confidence: bool
 
 
 def _load_config() -> dict:
@@ -170,13 +192,20 @@ def _circuit_state_for(model_config) -> str:
 
 def route_request(prompt: str) -> RoutingResult:
     """
-    Route one request with timeout protection, circuit breaking,
-    provider fallback, and resilience audit metadata.
+    Route one request with confidence-aware tier selection,
+    timeout protection, circuit breaking, provider fallback,
+    and resilience audit metadata.
     """
 
     config_data = _load_config()
 
-    tier = classify_complexity(prompt)
+    prediction = predict_complexity(prompt)
+
+    classifier_tier = prediction.tier
+    classification_confidence = prediction.confidence
+    low_confidence = prediction.is_low_confidence
+
+    tier = prediction.routing_tier
 
     primary_model = config_data["routing"][tier]
     primary_config = get_model(primary_model)
@@ -259,6 +288,9 @@ def route_request(prompt: str) -> RoutingResult:
         routed_model=routed_model,
         used_fallback=used_fallback,
         response=response,
+        classifier_tier=classifier_tier,
+        classification_confidence=classification_confidence,
+        low_confidence=low_confidence,
         primary_error_type=primary_error_type,
         circuit_state=primary_circuit_state,
     )
@@ -270,6 +302,9 @@ def route_request(prompt: str) -> RoutingResult:
         primary_model=primary_model,
         routed_model=routed_model,
         used_fallback=used_fallback,
+        classifier_tier=classifier_tier,
+        classification_confidence=classification_confidence,
+        low_confidence=low_confidence,
     )
 
 
@@ -287,6 +322,9 @@ def route_request_with_verification(
     audit record in the background.
 
     Synchronous verification completes before returning.
+
+    Verification eligibility follows the raw classifier tier rather
+    than the confidence-adjusted routing tier.
     """
 
     from src.verification.queue import (
@@ -300,7 +338,8 @@ def route_request_with_verification(
 
     result = route_request(prompt)
 
-    if result.tier == 3:
+    # T3 raw classifier predictions skip automatic verification.
+    if result.classifier_tier == 3:
         return result, None
 
     if synchronous:

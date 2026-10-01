@@ -1,8 +1,9 @@
 """
 SQLite audit logging for LLM Cost Autopilot.
 
-Each request gets an audit row containing routing, token, cost, latency,
-verification, escalation, provider failure, and resilience metadata.
+Each request gets an audit row containing routing, classifier confidence,
+token, cost, latency, verification, escalation, provider failure, and
+resilience metadata.
 
 Only a hash of the original prompt is stored.
 """
@@ -24,23 +25,26 @@ _lock = threading.Lock()
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS request_log (
-    request_id          TEXT PRIMARY KEY,
-    timestamp           TEXT NOT NULL,
-    prompt_hash         TEXT NOT NULL,
-    tier                INTEGER NOT NULL,
-    primary_model       TEXT NOT NULL,
-    routed_model        TEXT NOT NULL,
-    used_fallback       INTEGER NOT NULL,
-    input_tokens        INTEGER NOT NULL,
-    output_tokens       INTEGER NOT NULL,
-    cost_usd            REAL NOT NULL,
-    latency_s           REAL NOT NULL,
-    quality_score       REAL,
-    escalated           INTEGER,
-    verified            INTEGER NOT NULL DEFAULT 0,
-    error_type          TEXT,
-    primary_error_type  TEXT,
-    circuit_state       TEXT
+    request_id                TEXT PRIMARY KEY,
+    timestamp                 TEXT NOT NULL,
+    prompt_hash               TEXT NOT NULL,
+    tier                      INTEGER NOT NULL,
+    primary_model             TEXT NOT NULL,
+    routed_model              TEXT NOT NULL,
+    used_fallback             INTEGER NOT NULL,
+    input_tokens              INTEGER NOT NULL,
+    output_tokens             INTEGER NOT NULL,
+    cost_usd                  REAL NOT NULL,
+    latency_s                 REAL NOT NULL,
+    quality_score             REAL,
+    escalated                 INTEGER,
+    verified                  INTEGER NOT NULL DEFAULT 0,
+    error_type                TEXT,
+    primary_error_type        TEXT,
+    circuit_state             TEXT,
+    classifier_tier            INTEGER,
+    classification_confidence  REAL,
+    low_confidence             INTEGER
 );
 """
 
@@ -71,6 +75,21 @@ def _prepare_connection(conn: sqlite3.Connection) -> None:
 
     if "circuit_state" not in columns:
         conn.execute("ALTER TABLE request_log ADD COLUMN circuit_state TEXT")
+
+    if "classifier_tier" not in columns:
+        conn.execute(
+            "ALTER TABLE request_log ADD COLUMN classifier_tier INTEGER"
+        )
+
+    if "classification_confidence" not in columns:
+        conn.execute(
+            "ALTER TABLE request_log ADD COLUMN classification_confidence REAL"
+        )
+
+    if "low_confidence" not in columns:
+        conn.execute(
+            "ALTER TABLE request_log ADD COLUMN low_confidence INTEGER"
+        )
 
     conn.commit()
 
@@ -135,9 +154,26 @@ def log_request(
     primary_model: str | None = None,
     primary_error_type: str | None = None,
     circuit_state: str | None = None,
+    classifier_tier: int | None = None,
+    classification_confidence: float | None = None,
+    low_confidence: bool | None = None,
 ) -> None:
     """
     Persist one completed routing request.
+
+    tier:
+        Final routing tier used for provider selection.
+
+    classifier_tier:
+        Raw tier predicted by the ML classifier before the
+        confidence-aware routing policy.
+
+    classification_confidence:
+        Probability assigned to the raw classifier prediction.
+
+    low_confidence:
+        Whether the confidence-aware routing policy promoted the
+        request to a safer routing tier.
 
     primary_model:
         Model selected by the routing policy before fallback.
@@ -188,9 +224,12 @@ def log_request(
                     verified,
                     error_type,
                     primary_error_type,
-                    circuit_state
+                    circuit_state,
+                    classifier_tier,
+                    classification_confidence,
+                    low_confidence
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     request_id,
@@ -207,6 +246,13 @@ def log_request(
                     response.error_type,
                     primary_error_type,
                     circuit_state,
+                    classifier_tier,
+                    classification_confidence,
+                    (
+                        int(low_confidence)
+                        if low_confidence is not None
+                        else None
+                    ),
                 ),
             )
 

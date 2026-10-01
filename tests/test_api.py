@@ -191,6 +191,9 @@ def _mock_failed_routing_result(error_type: str):
         primary_model="groq-gpt-oss-20b",
         routed_model="groq-gpt-oss-20b",
         used_fallback=False,
+        classifier_tier=2,
+        classification_confidence=0.95,
+        low_confidence=False,
     ), None
 
 

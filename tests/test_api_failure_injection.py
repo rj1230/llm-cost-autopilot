@@ -6,6 +6,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.api.main import app
+from src.classifier.predict import ComplexityPrediction
 from src.models.registry import get_model
 from src.models.response import Response
 from src.resilience import ProviderTimeoutError
@@ -52,6 +53,20 @@ def _fallback_success_response() -> Response:
     )
 
 
+def _tier_one_prediction() -> ComplexityPrediction:
+    """Build a deterministic high-confidence T1 prediction."""
+
+    return ComplexityPrediction(
+        tier=1,
+        confidence=0.99,
+        probabilities={
+            1: 0.99,
+            2: 0.01,
+            3: 0.0,
+        },
+    )
+
+
 def test_api_primary_failure_triggers_fallback_and_persists_audit(
     monkeypatch,
     tmp_path,
@@ -68,8 +83,8 @@ def test_api_primary_failure_triggers_fallback_and_persists_audit(
     )
 
     monkeypatch.setattr(
-        "src.routing.classify_complexity",
-        lambda prompt: 1,
+        "src.routing.predict_complexity",
+        lambda prompt: _tier_one_prediction(),
     )
 
     responses = [
@@ -122,6 +137,9 @@ def test_api_primary_failure_triggers_fallback_and_persists_audit(
             SELECT
                 request_id,
                 tier,
+                classifier_tier,
+                classification_confidence,
+                low_confidence,
                 primary_model,
                 routed_model,
                 used_fallback,
@@ -145,6 +163,10 @@ def test_api_primary_failure_triggers_fallback_and_persists_audit(
 
     assert row["request_id"] == request_id
     assert row["tier"] == 1
+
+    assert row["classifier_tier"] == 1
+    assert row["classification_confidence"] == 0.99
+    assert row["low_confidence"] == 0
 
     assert row["primary_model"] == "mistral-small"
     assert row["routed_model"] == "groq-gpt-oss-20b"
@@ -179,8 +201,8 @@ def test_api_timeout_triggers_fallback_and_persists_audit(
     )
 
     monkeypatch.setattr(
-        "src.routing.classify_complexity",
-        lambda prompt: 1,
+        "src.routing.predict_complexity",
+        lambda prompt: _tier_one_prediction(),
     )
 
     responses = [
@@ -233,6 +255,9 @@ def test_api_timeout_triggers_fallback_and_persists_audit(
             SELECT
                 request_id,
                 tier,
+                classifier_tier,
+                classification_confidence,
+                low_confidence,
                 primary_model,
                 routed_model,
                 used_fallback,
@@ -255,6 +280,10 @@ def test_api_timeout_triggers_fallback_and_persists_audit(
 
     assert row["request_id"] == request_id
     assert row["tier"] == 1
+
+    assert row["classifier_tier"] == 1
+    assert row["classification_confidence"] == 0.99
+    assert row["low_confidence"] == 0
 
     assert row["primary_model"] == "mistral-small"
     assert row["routed_model"] == "groq-gpt-oss-20b"
@@ -281,8 +310,8 @@ def test_fallback_is_called_with_correct_model_after_primary_failure(
     monkeypatch.setenv("API_KEY", "test-api-key")
 
     monkeypatch.setattr(
-        "src.routing.classify_complexity",
-        lambda prompt: 1,
+        "src.routing.predict_complexity",
+        lambda prompt: _tier_one_prediction(),
     )
 
     primary_failure = _failure_response()

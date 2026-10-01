@@ -7,6 +7,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.api.main import app
+from src.classifier.predict import ComplexityPrediction
 from src.models.response import Response
 from src.routing import RoutingResult
 
@@ -18,7 +19,9 @@ AUTH_HEADERS = {
 }
 
 
-def _mock_successful_routing_result() -> RoutingResult:
+def _mock_successful_routing_result(
+    classifier_tier: int = 2,
+) -> RoutingResult:
     """Build a deterministic successful routing result."""
 
     response = Response(
@@ -36,10 +39,13 @@ def _mock_successful_routing_result() -> RoutingResult:
     return RoutingResult(
         request_id="e2e-test-request-id",
         response=response,
-        tier=2,
+        tier=classifier_tier,
         primary_model="groq-gpt-oss-20b",
         routed_model="groq-gpt-oss-20b",
         used_fallback=False,
+        classifier_tier=classifier_tier,
+        classification_confidence=0.99,
+        low_confidence=False,
     )
 
 
@@ -153,12 +159,11 @@ def test_e2e_wait_for_verification_returns_verification_status(
 
 
 def test_e2e_tier_three_skips_verification(monkeypatch):
-    """Validate that tier 3 requests bypass verification."""
+    """Validate that classifier tier 3 requests bypass verification."""
 
     monkeypatch.setenv("API_KEY", "test-api-key")
 
-    result = _mock_successful_routing_result()
-    result.tier = 3
+    result = _mock_successful_routing_result(classifier_tier=3)
 
     with patch(
         "src.api.main.route_request_with_verification",
@@ -222,7 +227,7 @@ def test_e2e_successful_request_is_persisted_to_audit_db(
     monkeypatch,
     tmp_path,
 ):
-    """Validate that a successful API request creates an audit row."""
+    """Validate successful request persistence and Phase 3C metadata."""
 
     monkeypatch.setenv("API_KEY", "test-api-key")
 
@@ -234,8 +239,12 @@ def test_e2e_successful_request_is_persisted_to_audit_db(
     )
 
     monkeypatch.setattr(
-        "src.routing.classify_complexity",
-        lambda prompt: 3,
+        "src.routing.predict_complexity",
+        lambda prompt: ComplexityPrediction(
+            tier=3,
+            confidence=0.99,
+            probabilities={1: 0.0, 2: 0.01, 3: 0.99},
+        ),
     )
 
     provider_response = Response(
@@ -285,6 +294,9 @@ def test_e2e_successful_request_is_persisted_to_audit_db(
                 request_id,
                 prompt_hash,
                 tier,
+                classifier_tier,
+                classification_confidence,
+                low_confidence,
                 primary_model,
                 routed_model,
                 used_fallback,
@@ -308,6 +320,10 @@ def test_e2e_successful_request_is_persisted_to_audit_db(
 
     assert row["request_id"] == request_id
     assert row["tier"] == 3
+
+    assert row["classifier_tier"] == 3
+    assert row["classification_confidence"] == 0.99
+    assert row["low_confidence"] == 0
 
     assert row["primary_model"] == "groq-gpt-oss-20b"
     assert row["routed_model"] == "groq-gpt-oss-20b"
