@@ -8,7 +8,7 @@
   },
   "metrics": {
     "requests": 30,
-    "routing_accuracy": 0.93333333,
+    "routing_accuracy": 1.0,
     "successful_requests": 30,
     "failed_requests": 0,
     "success_rate": 1.0,
@@ -29,11 +29,11 @@
       "total": 5800
     },
     "cost_usd": {
-      "actual": 0.0015015,
-      "average_per_request": 5.005e-05,
+      "actual": 0.001425,
+      "average_per_request": 4.75e-05,
       "gpt4o_baseline": 0.041125,
-      "estimated_savings": 0.0396235,
-      "estimated_savings_rate": 0.96348936
+      "estimated_savings": 0.0397,
+      "estimated_savings_rate": 0.96534954
     }
   },
   "by_tier": {
@@ -47,11 +47,11 @@
     },
     "2": {
       "requests": 10,
-      "routing_accuracy": 0.8,
+      "routing_accuracy": 1.0,
       "successful_requests": 10,
       "fallback_requests": 0,
       "average_latency_s": 0.9,
-      "total_cost_usd": 0.000459
+      "total_cost_usd": 0.0003825
     },
     "3": {
       "requests": 10,
@@ -319,9 +319,9 @@
       "request_id": "benchmark-015",
       "prompt": "Describe how vector similarity search works.",
       "expected_tier": 2,
-      "predicted_tier": 1,
-      "primary_model": "mistral-small",
-      "routed_model": "mistral-small",
+      "predicted_tier": 2,
+      "primary_model": "groq-gpt-oss-20b",
+      "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -329,17 +329,17 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 7.65e-05,
+      "cost_usd": 3.825e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.0011985
+      "savings_usd": 0.00123675
     },
     {
       "request_id": "benchmark-016",
       "prompt": "Explain precision, recall, and F1 score.",
       "expected_tier": 2,
-      "predicted_tier": 1,
-      "primary_model": "mistral-small",
-      "routed_model": "mistral-small",
+      "predicted_tier": 2,
+      "primary_model": "groq-gpt-oss-20b",
+      "routed_model": "groq-gpt-oss-20b",
       "used_fallback": false,
       "success": true,
       "error_type": null,
@@ -347,9 +347,9 @@
       "output_tokens": 110,
       "total_tokens": 180,
       "latency_s": 0.9,
-      "cost_usd": 7.65e-05,
+      "cost_usd": 3.825e-05,
       "baseline_cost_usd": 0.001275,
-      "savings_usd": 0.0011985
+      "savings_usd": 0.00123675
     },
     {
       "request_id": "benchmark-017",
