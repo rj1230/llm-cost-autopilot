@@ -8,7 +8,6 @@ import joblib
 
 from src.classifier.features import features_to_vector
 
-
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 MODEL_PATH = DATA_DIR / "classifier_v4_final.joblib"
 

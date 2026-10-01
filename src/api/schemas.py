@@ -4,7 +4,6 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 MAX_MESSAGES = 50
 MAX_MESSAGE_CONTENT_LENGTH = 16_000
 

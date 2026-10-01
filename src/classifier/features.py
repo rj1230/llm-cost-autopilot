@@ -10,7 +10,6 @@ This module only converts a prompt into numeric features.
 
 import re
 
-
 # ---------------------------------------------------------------------------
 # Core lexical / reasoning signals
 # ---------------------------------------------------------------------------

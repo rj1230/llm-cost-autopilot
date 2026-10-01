@@ -1,7 +1,7 @@
 """The standardized object every provider call returns, regardless of provider."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Response:
     model_name: str
     provider: str
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     error: str | None = None
     error_type: str | None = None

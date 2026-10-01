@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, TypeVar
-
+from typing import TypeVar
 
 T = TypeVar("T")
 
@@ -225,7 +226,7 @@ class CircuitRegistry:
         return {provider: self.get(provider).snapshot() for provider in providers}
 
 
-def call_with_timeout(
+def call_with_timeout[T](
     function: Callable[[], T],
     timeout_s: float,
 ) -> T:

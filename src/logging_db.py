@@ -11,11 +11,10 @@ Only a hash of the original prompt is stored.
 import hashlib
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.models.response import Response
-
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DB_PATH = DATA_DIR / "requests.db"
@@ -233,7 +232,7 @@ def log_request(
                 """,
                 (
                     request_id,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                     hash_prompt(prompt),
                     tier,
                     primary_model,

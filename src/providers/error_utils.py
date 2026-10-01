@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 RATE_LIMIT = "rate_limit"
 TIMEOUT = "timeout"
 SERVER_ERROR = "server_error"

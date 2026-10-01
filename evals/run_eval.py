@@ -5,12 +5,11 @@ Command-line production evaluation for LLM Cost Autopilot.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from benchmark.benchmark import run_benchmark
 from evals.evaluator import evaluate_benchmark
-
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT_DIR / "evals" / "results"
@@ -25,7 +24,7 @@ def run_evaluation() -> dict:
     evaluation = evaluate_benchmark(benchmark_result)
 
     result = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "benchmark": benchmark_result["benchmark"],
         "metrics": benchmark_result["metrics"],
         "by_tier": benchmark_result["by_tier"],

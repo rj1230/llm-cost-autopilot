@@ -41,7 +41,6 @@ from src.models.registry import MODEL_REGISTRY
 from src.routing import CONFIG_PATH, route_request_with_verification
 from src.stats import get_summary
 
-
 logger = logging.getLogger("llm_cost_autopilot.api")
 
 
@@ -178,7 +177,7 @@ def readyz() -> JSONResponse:
             routing_config = yaml.safe_load(file)
 
         if not isinstance(routing_config, dict):
-            raise ValueError("routing configuration is not an object")
+            raise TypeError("routing configuration is not an object")
 
         routing = routing_config.get(
             "routing",
@@ -186,14 +185,14 @@ def readyz() -> JSONResponse:
         )
 
         if set(routing) != {1, 2, 3}:
-            raise ValueError("routing configuration must contain tiers 1, 2, and 3")
+            raise TypeError("routing configuration must contain tiers 1, 2, and 3")
 
         unknown_routing_models = [
             model for model in routing.values() if model not in MODEL_REGISTRY
         ]
 
         if unknown_routing_models:
-            raise ValueError(f"unknown routing models: {unknown_routing_models}")
+            raise TypeError(f"unknown routing models: {unknown_routing_models}")
 
         fallback = routing_config.get(
             "fallback",
@@ -201,7 +200,7 @@ def readyz() -> JSONResponse:
         )
 
         if not isinstance(fallback, dict):
-            raise ValueError("fallback configuration is not an object")
+            raise TypeError("fallback configuration is not an object")
 
         unsupported_fallback_tiers = sorted(set(fallback) - {1, 2, 3})
 

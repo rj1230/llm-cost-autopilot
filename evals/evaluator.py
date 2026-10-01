@@ -61,16 +61,16 @@ def evaluate_benchmark(
     metrics = benchmark_result.get("metrics")
 
     if not isinstance(metrics, dict):
-        raise ValueError("Benchmark result is missing 'metrics'.")
+        raise TypeError("Benchmark result is missing 'metrics'.")
 
     latency = metrics.get("latency_s")
     cost = metrics.get("cost_usd")
 
     if not isinstance(latency, dict):
-        raise ValueError("Benchmark result is missing 'latency_s'.")
+        raise TypeError("Benchmark result is missing 'latency_s'.")
 
     if not isinstance(cost, dict):
-        raise ValueError("Benchmark result is missing 'cost_usd'.")
+        raise TypeError("Benchmark result is missing 'cost_usd'.")
 
     routing_accuracy = float(metrics.get("routing_accuracy", 0.0))
     success_rate = float(metrics.get("success_rate", 0.0))

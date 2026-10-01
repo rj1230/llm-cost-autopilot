@@ -61,14 +61,13 @@ def test_concurrent_requests_return_unique_request_ids_and_successes(
     with patch(
         "src.routing._call_model",
         side_effect=lambda prompt, model: _successful_response(),
-    ) as mock_call:
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            results = list(
-                executor.map(
-                    run_request,
-                    range(20),
-                )
+    ) as mock_call, ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(
+            executor.map(
+                run_request,
+                range(20),
             )
+        )
 
     assert len(results) == 20
 

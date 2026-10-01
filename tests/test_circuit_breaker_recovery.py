@@ -39,35 +39,34 @@ def test_provider_circuit_recovers_after_failures_and_cooldown():
     with patch(
         "src.routing._CIRCUITS",
         registry,
-    ):
-        with patch(
-            "src.routing.send_request",
-            return_value=_success_response(),
-        ) as mock_send:
-            circuit.record_failure()
-            circuit.record_failure()
+    ), patch(
+        "src.routing.send_request",
+        return_value=_success_response(),
+    ) as mock_send:
+        circuit.record_failure()
+        circuit.record_failure()
 
-            assert circuit.state == CircuitState.CLOSED
+        assert circuit.state == CircuitState.CLOSED
 
-            circuit.record_failure()
+        circuit.record_failure()
 
-            assert circuit.state == CircuitState.OPEN
-            assert circuit.allow_request() is False
+        assert circuit.state == CircuitState.OPEN
+        assert circuit.allow_request() is False
 
-            time.sleep(0.07)
+        time.sleep(0.07)
 
-            assert circuit.state == CircuitState.HALF_OPEN
+        assert circuit.state == CircuitState.HALF_OPEN
 
-            response = _call_model(
-                "Explain circuit breaker recovery.",
-                model,
-            )
+        response = _call_model(
+            "Explain circuit breaker recovery.",
+            model,
+        )
 
-            assert response.error is None
-            assert response.output_text == "Provider recovered successfully."
+        assert response.error is None
+        assert response.output_text == "Provider recovered successfully."
 
-            assert circuit.state == CircuitState.CLOSED
-            assert circuit.snapshot().consecutive_failures == 0
-            assert circuit.allow_request() is True
+        assert circuit.state == CircuitState.CLOSED
+        assert circuit.snapshot().consecutive_failures == 0
+        assert circuit.allow_request() is True
 
-            assert mock_send.call_count == 1
+        assert mock_send.call_count == 1

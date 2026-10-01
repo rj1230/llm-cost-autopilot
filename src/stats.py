@@ -9,7 +9,6 @@ from pathlib import Path
 from src.logging_db import DB_PATH, ensure_schema
 from src.models.registry import get_model
 
-
 ALWAYS_GPT4O = "gpt-4o"
 
 

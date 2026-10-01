@@ -11,7 +11,6 @@ from src.classifier.predict import ComplexityPrediction
 from src.models.response import Response
 from src.routing import RoutingResult
 
-
 client = TestClient(app)
 
 AUTH_HEADERS = {

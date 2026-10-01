@@ -10,8 +10,8 @@ returns immediately, and on_complete (if given) runs in the worker thread
 once the verification call finishes.
 """
 
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable
 
 from src.logging_db import update_verification
 from src.models.response import Response

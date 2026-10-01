@@ -177,7 +177,7 @@ def test_custom_thresholds_are_supported(benchmark_result):
 def test_invalid_benchmark_result_is_rejected():
     """Malformed benchmark input must fail explicitly."""
 
-    with pytest.raises(ValueError, match="metrics"):
+    with pytest.raises(TypeError, match="metrics"):
         evaluate_benchmark({})
 
 

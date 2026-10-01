@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from src.models.registry import get_model
 from src.models.response import Response
-from src.resilience import CircuitRegistry, CircuitState
 from src.routing import route_request
 
 
@@ -78,7 +77,6 @@ def test_primary_failure_triggers_fallback():
 
 
 def test_timeout_triggers_fallback():
-    primary = get_model("mistral-small")
     fallback = get_model("groq-gpt-oss-20b")
 
     from src.resilience import ProviderTimeoutError
@@ -103,7 +101,6 @@ def test_timeout_triggers_fallback():
 
 
 def test_circuit_open_triggers_fallback():
-    primary = get_model("mistral-small")
     fallback = get_model("groq-gpt-oss-20b")
 
     from src.resilience import CircuitOpenError
@@ -125,10 +122,11 @@ def test_circuit_open_triggers_fallback():
     assert result.used_fallback is True
     assert result.routed_model == "groq-gpt-oss-20b"
     assert result.response.error is None
+
+
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 from src.classifier.predict import ComplexityPrediction
 
@@ -185,9 +183,7 @@ def test_fallback_creates_one_audit_row_with_final_response_accounting():
                 ],
             ),
         ):
-            result = route_request(
-                "Explain why fallback routing is useful."
-            )
+            result = route_request("Explain why fallback routing is useful.")
 
         assert result.used_fallback is True
         assert result.primary_model == primary.name
@@ -271,9 +267,7 @@ def test_low_confidence_t3_remains_t3_and_uses_t3_route():
             "src.routing.log_request",
         ) as mock_log,
     ):
-        result = route_request(
-            "Design a production LLM routing architecture."
-        )
+        result = route_request("Design a production LLM routing architecture.")
 
     assert result.classifier_tier == 3
     assert result.classification_confidence == 0.40
@@ -316,9 +310,7 @@ def test_low_confidence_t1_promotes_to_t2_before_model_selection():
             "src.routing.log_request",
         ) as mock_log,
     ):
-        result = route_request(
-            "Explain an API gateway."
-        )
+        result = route_request("Explain an API gateway.")
 
     assert result.classifier_tier == 1
     assert result.low_confidence is True
@@ -332,6 +324,8 @@ def test_low_confidence_t1_promotes_to_t2_before_model_selection():
     assert logged["classifier_tier"] == 1
     assert logged["tier"] == 2
     assert logged["low_confidence"] is True
+
+
 def test_primary_and_fallback_failure_preserve_terminal_error_and_single_audit_row():
     primary = get_model("mistral-small")
     fallback = get_model("groq-gpt-oss-20b")
@@ -380,9 +374,7 @@ def test_primary_and_fallback_failure_preserve_terminal_error_and_single_audit_r
                 ],
             ) as mock_call,
         ):
-            result = route_request(
-                "Explain what happens when both providers fail."
-            )
+            result = route_request("Explain what happens when both providers fail.")
 
         assert mock_call.call_count == 2
 

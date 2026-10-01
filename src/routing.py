@@ -15,6 +15,7 @@ import uuid
 from concurrent.futures import Future
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -31,6 +32,8 @@ from src.resilience import (
     call_with_timeout,
 )
 
+if TYPE_CHECKING:
+    from src.verification.verifier import VerificationOutcome
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "routing.yaml"
 
@@ -318,10 +321,19 @@ def route_request_with_verification(
     """
     Route a request and optionally run quality verification.
 
-    Asynchronous verification returns immediately and updates the
-    audit record in the background.
+    Verification policy:
 
-    Synchronous verification completes before returning.
+    1. Provider-error responses are never submitted to the verifier.
+       They return immediately with no verification task.
+
+    2. T3 raw classifier predictions skip automatic verification.
+
+    3. Successful T1/T2 responses are eligible for verification.
+
+    4. Asynchronous verification returns immediately and updates the
+       audit record in the background.
+
+    5. Synchronous verification completes before returning.
 
     Verification eligibility follows the raw classifier tier rather
     than the confidence-adjusted routing tier.
@@ -332,16 +344,38 @@ def route_request_with_verification(
         submit_verification,
     )
     from src.verification.verifier import (
-        VerificationOutcome,
         verify_response,
     )
 
     result = route_request(prompt)
 
-    # T3 raw classifier predictions skip automatic verification.
+    # ---------------------------------------------------------------
+    # 1. Never verify a failed provider response.
+    #
+    # This includes:
+    # - provider errors
+    # - timeouts
+    # - circuit-open responses
+    # - unexpected provider/routing errors
+    #
+    # Verification requires a valid generated response. Sending an
+    # error response to the reference/judge pipeline wastes verifier
+    # capacity and can produce meaningless quality scores.
+    # ---------------------------------------------------------------
+    if result.response.error:
+        return result, None
+
+    # ---------------------------------------------------------------
+    # 2. T3 raw classifier predictions are already routed to the
+    # highest-quality/reference tier, so automatic verification is
+    # intentionally skipped.
+    # ---------------------------------------------------------------
     if result.classifier_tier == 3:
         return result, None
 
+    # ---------------------------------------------------------------
+    # 3. Successful T1/T2 response -> verification.
+    # ---------------------------------------------------------------
     if synchronous:
         outcome = verify_response(
             prompt,

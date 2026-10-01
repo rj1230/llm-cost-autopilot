@@ -13,7 +13,6 @@ from unittest.mock import patch
 from src.models.response import Response
 from src.routing import route_request
 
-
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT / "benchmark" / "results"
 RESULTS_PATH = RESULTS_DIR / "concurrency_latest.json"

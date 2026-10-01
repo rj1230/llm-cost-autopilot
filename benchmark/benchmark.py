@@ -30,7 +30,6 @@ from src.models.registry import get_model
 from src.models.response import Response
 from src.routing import RoutingResult, route_request
 
-
 ROOT_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT_DIR / "benchmark" / "results"
 RESULTS_PATH = RESULTS_DIR / "latest.json"

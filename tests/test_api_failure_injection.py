@@ -11,7 +11,6 @@ from src.models.registry import get_model
 from src.models.response import Response
 from src.resilience import ProviderTimeoutError
 
-
 client = TestClient(app)
 
 AUTH_HEADERS = {

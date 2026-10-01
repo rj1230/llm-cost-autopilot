@@ -20,7 +20,6 @@ import plotly.graph_objects as go
 import requests as http_requests
 import streamlit as st
 
-
 # ---------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------
@@ -676,18 +675,18 @@ def style_fig(fig: go.Figure, **layout_kwargs) -> go.Figure:
     fig.update_layout(
         paper_bgcolor="rgba(0, 0, 0, 0)",
         plot_bgcolor="rgba(0, 0, 0, 0)",
-        font=dict(
-            family="IBM Plex Sans, sans-serif",
-            color="#c7ccd6",
-            size=12,
-        ),
+        font={
+            "family": "IBM Plex Sans, sans-serif",
+            "color": "#c7ccd6",
+            "size": 12,
+        },
         colorway=CHART_COLORWAY,
-        margin=dict(l=10, r=10, t=10, b=10),
-        hoverlabel=dict(
-            bgcolor="#10141d",
-            font_color="#e9edf4",
-            bordercolor="rgba(148, 163, 184, 0.30)",
-        ),
+        margin={"l": 10, "r": 10, "t": 10, "b": 10},
+        hoverlabel={
+            "bgcolor": "#10141d",
+            "font_color": "#e9edf4",
+            "bordercolor": "rgba(148, 163, 184, 0.30)",
+        },
     )
 
     fig.update_xaxes(
@@ -980,14 +979,12 @@ def load_requests(db_path: str) -> pd.DataFrame:
     ]:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
 
-    frame["classifier_tier"] = (
-        frame["classifier_tier"]
-        .where(frame["classifier_tier"].isin([1, 2, 3]))
+    frame["classifier_tier"] = frame["classifier_tier"].where(
+        frame["classifier_tier"].isin([1, 2, 3])
     )
 
-    frame["classification_confidence"] = (
-        frame["classification_confidence"]
-        .clip(lower=0.0, upper=1.0)
+    frame["classification_confidence"] = frame["classification_confidence"].clip(
+        lower=0.0, upper=1.0
     )
 
     for column in ["used_fallback", "escalated", "verified", "low_confidence"]:
@@ -1052,10 +1049,11 @@ def sync_cloud_provider_secrets() -> None:
 def get_secret(name: str) -> str:
     try:
         value = st.secrets.get(name, "")
-        if value:
-            return str(value).strip()
-    except Exception:
-        pass
+    except (FileNotFoundError, KeyError):
+        value = ""
+
+    if value:
+        return str(value).strip()
 
     return os.getenv(name, "").strip()
 
@@ -1067,10 +1065,11 @@ def get_api_base_url() -> str:
 def is_cloud_mode() -> bool:
     try:
         value = st.secrets.get("AUTOPILOT_CLOUD_MODE", "")
-        if value != "":
-            return str(value).strip().lower() in {"1", "true", "yes", "on"}
-    except Exception:
-        pass
+    except (FileNotFoundError, KeyError):
+        value = ""
+
+    if value != "":
+        return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
     return CLOUD_MODE
 
@@ -1227,8 +1226,7 @@ def render_playground() -> None:
     with status_col:
         if cloud_mode:
             st.success(
-                "Connected: `Streamlit Cloud direct mode` — "
-                "routing runs in-process."
+                "Connected: `Streamlit Cloud direct mode` — routing runs in-process."
             )
         elif api_key_configured:
             st.success(f"Connected target: `{get_api_base_url()}`")
@@ -1394,8 +1392,7 @@ def render_playground() -> None:
 
         promotion_display = (
             "Promoted by safety policy"
-            if str(classifier_tier) != str(tier)
-            and classifier_tier != "—"
+            if str(classifier_tier) != str(tier) and classifier_tier != "—"
             else "No promotion"
         )
 
@@ -1597,9 +1594,7 @@ avg_classification_confidence = (
 )
 
 low_confidence_count = (
-    int(classification_view["low_confidence"].sum())
-    if classification_total
-    else 0
+    int(classification_view["low_confidence"].sum()) if classification_total else 0
 )
 
 low_confidence_rate = safe_rate(
@@ -1947,7 +1942,7 @@ with routing_tab:
             style_fig(
                 fig,
                 height=350,
-                margin=dict(l=10, r=35, t=10, b=10),
+                margin={"l": 10, "r": 35, "t": 10, "b": 10},
             )
 
             st.plotly_chart(fig, width="stretch")
@@ -2031,7 +2026,7 @@ with routing_tab:
                 style_fig(
                     fig,
                     height=300,
-                    margin=dict(l=10, r=35, t=10, b=10),
+                    margin={"l": 10, "r": 35, "t": 10, "b": 10},
                 )
 
                 st.plotly_chart(fig, width="stretch")
@@ -2207,7 +2202,7 @@ with reliability_tab:
             style_fig(
                 fig,
                 height=320,
-                margin=dict(l=10, r=35, t=10, b=10),
+                margin={"l": 10, "r": 35, "t": 10, "b": 10},
             )
 
             st.plotly_chart(fig, width="stretch")
@@ -2372,7 +2367,7 @@ with benchmark_tab:
         style_fig(
             fig,
             height=310,
-            margin=dict(l=10, r=65, t=10, b=10),
+            margin={"l": 10, "r": 65, "t": 10, "b": 10},
             showlegend=False,
         )
 
@@ -2449,9 +2444,9 @@ with audit_tab:
         audit_view["cost_usd"] = audit_view["cost_usd"].round(8)
         audit_view["latency_s"] = audit_view["latency_s"].round(4)
         audit_view["quality_score"] = audit_view["quality_score"].round(4)
-        audit_view["classification_confidence"] = (
-            audit_view["classification_confidence"].round(4)
-        )
+        audit_view["classification_confidence"] = audit_view[
+            "classification_confidence"
+        ].round(4)
 
         audit_view = audit_view.rename(
             columns={

@@ -14,12 +14,11 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from benchmark.benchmark import run_benchmark
 from evals.evaluator import evaluate_benchmark
-
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT_DIR / "evals" / "results"
@@ -40,6 +39,7 @@ def _check_application_readiness() -> list[dict]:
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     return [
@@ -68,6 +68,7 @@ def _check_regression_suite() -> dict:
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     return {
@@ -103,7 +104,7 @@ def run_deployment_gate() -> dict:
     passed = all(gate["passed"] for gate in all_gates)
 
     result = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "gate": {
             "name": "LLM Cost Autopilot Deployment Gate",
             "version": "1.0",

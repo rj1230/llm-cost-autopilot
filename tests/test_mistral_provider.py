@@ -8,7 +8,6 @@ import pytest
 from src.models.registry import MODEL_REGISTRY
 from src.providers.mistral_provider import MistralProvider
 
-
 MODEL_CONFIG = MODEL_REGISTRY["mistral-small"]
 
 

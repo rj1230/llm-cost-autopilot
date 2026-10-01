@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-
 load_dotenv()
 
 _bearer_scheme = HTTPBearer(
@@ -16,7 +15,7 @@ _bearer_scheme = HTTPBearer(
 
 
 def require_api_key(
-    credentials: HTTPAuthorizationCredentials | None = Security(_bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Security(_bearer_scheme),  # noqa :B008
 ) -> None:
     """
     Require a valid Bearer API key.

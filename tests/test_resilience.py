@@ -3,10 +3,10 @@ import time
 import pytest
 
 from src.resilience import (
+    CircuitBreaker,
     CircuitOpenError,
     CircuitRegistry,
     CircuitState,
-    CircuitBreaker,
 )
 
 

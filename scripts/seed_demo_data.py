@@ -14,10 +14,10 @@ Run with:  python -m scripts.seed_demo_data [--requests 400] [--days 14]
 import argparse
 import random
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.logging_db import _connect, hash_prompt
-from src.models.registry import MODEL_REGISTRY, get_model
+from src.models.registry import get_model
 
 random.seed(7)
 
@@ -38,7 +38,7 @@ def _random_tokens(tier: int) -> tuple[int, int]:
 
 
 def seed(num_requests: int, num_days: int) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     conn = _connect()
     try:
         for i in range(num_requests):
