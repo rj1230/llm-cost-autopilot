@@ -13,7 +13,7 @@ AUTH_HEADERS = {
 }
 
 ROOT = Path(__file__).resolve().parents[1]
-CLASSIFIER_PATH = ROOT / "data" / "classifier.joblib"
+CLASSIFIER_PATH = ROOT / "data" / "classifier_v4_final.joblib"
 
 
 def test_application_imports_and_core_routes_exist():

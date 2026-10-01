@@ -8,7 +8,9 @@ import joblib
 
 from src.classifier.features import features_to_vector
 
-MODEL_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "classifier.joblib"
+
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+MODEL_PATH = DATA_DIR / "classifier_v4_final.joblib"
 
 CONFIDENCE_THRESHOLD = 0.85
 
@@ -49,8 +51,7 @@ class ComplexityPrediction:
 def _load_model():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(
-            f"{MODEL_PATH} not found - run `python -m src.classifier.train` first "
-            "(and `python -m data.generate_dataset` before that if you haven't)."
+            f"{MODEL_PATH} not found - the frozen V4 classifier artifact is required."
         )
 
     bundle = joblib.load(MODEL_PATH)

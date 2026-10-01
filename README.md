@@ -172,15 +172,14 @@ The V4 held-out model evaluation reached approximately **97% accuracy**.
 
 The independent benchmark is kept separate from the training/held-out evaluation to provide a more realistic routing check.
 
-### Rebuild / validate
+### Validate
 
 ```powershell
-uv run python -m data.generate_dataset
-uv run python -m src.classifier.train
 uv run python -m scripts.check_routing_offline
+uv run pytest -q
 ```
 
-The frozen classifier artifact allows the application to run without retraining during normal startup.
+The production service loads the frozen V4 artifact `data/classifier_v4_final.joblib` directly. The application does not retrain the classifier during startup or request handling.
 
 ---
 

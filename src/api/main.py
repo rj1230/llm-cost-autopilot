@@ -166,7 +166,7 @@ def readyz() -> JSONResponse:
         checks["database"] = "error"
 
     # Classifier artifact
-    classifier_path = CONFIG_PATH.parent.parent / "data" / "classifier.joblib"
+    classifier_path = CONFIG_PATH.parent.parent / "data" / "classifier_v4_final.joblib"
 
     checks["classifier"] = "ok" if classifier_path.is_file() else "error"
 
