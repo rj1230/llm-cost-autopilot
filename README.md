@@ -1,129 +1,149 @@
-# LLM Cost Autopilot
 
-**Production-oriented, cost-aware LLM routing with confidence-aware tier promotion, provider fallback, quality verification, escalation, audit logging, and observability.**
+
+
+
+LLM Cost Autopilot
+Production-oriented, cost-aware LLM routing with confidence-aware tier promotion, provider fallback, quality verification, escalation, audit logging, and observability.
 
 LLM Cost Autopilot is an intelligent routing layer that sits in front of multiple LLM providers. It classifies incoming requests by complexity, routes them to an appropriate cost/quality tier, verifies lower-cost responses when required, and escalates when quality is insufficient.
 
-The system is designed around a practical production constraint:
+Core principle: Use the least expensive model that is likely to satisfy the request, while maintaining explicit safety, quality, failure, and accounting paths.
 
-> **Use the least expensive model that is likely to satisfy the request, while maintaining explicit safety, quality, failure, and accounting paths.**
+Validation Snapshot
+Gate	Result
+Automated regression	135 passed
+Deterministic benchmark	100% routing accuracy
+Benchmark success rate	100%
+Benchmark fallback rate	0%
+Average benchmark latency	0.9333 s
+Benchmark P95/P99	1.3500 s
+Benchmark actual cost	$0.001425
+Estimated reduction vs configured all-GPT-4o baseline	96.53%
+Live confidence-promotion smoke test	Passed
+Live provider-fallback smoke test	Passed
+SQLite audit reconstruction	Passed
+Streamlit direct-mode smoke test	Passed
+The 96.53% figure is an estimated comparison against the project's configured all-GPT-4o pricing baseline. It is not a claim of universal production savings.
 
----
+Architecture
+Incoming Request
+       │
+       ▼
+┌──────────────────────┐
+│ Complexity Classifier │
+│   Random Forest V4   │
+└──────────┬───────────┘
+           │
+     Raw tier + confidence
+           │
+           ▼
+┌──────────────────────────┐
+│ Confidence Safety Policy │
+│ <85% → promote T1/T2     │
+└────────────┬─────────────┘
+             │
+             ▼
+      Final Routing Tier
+             │
+       ┌─────┼─────┐
+       ▼     ▼     ▼
+     T1      T2     T3
+   Mistral   Groq   Highest
+    Small   GPT-OSS configured
+             20B      tier
+       │     │       │
+       └─────┼───────┘
+             ▼
+    Provider / Retry /
+      Circuit Breaker
+             │
+       ┌─────┴─────┐
+       │           │
+    Success      Failure
+       │           │
+       │      Configured fallback
+       │           │
+       └─────┬─────┘
+             ▼
+       Response to caller
+             │
+             ▼
+   Async Quality Verification
+             │
+       ┌─────┴─────┐
+       │           │
+     Passed       Failed
+       │           │
+      Keep      Escalate
+                   │
+                   ▼
+           Stronger reference
+                response
+                   │
+                   ▼
+             Audit + Metrics
+Current routing configuration
+Tier 1 → mistral-small
+Tier 2 → groq-gpt-oss-20b
+Tier 3 → groq-gpt-oss-20b
+Tier 3 is retained as the highest complexity tier in the routing policy. In the current deployment, Tier 2 and Tier 3 map to the same Groq model rather than separate live providers.
 
-## Architecture
+Current Benchmark
+The current deterministic benchmark contains 30 fixed requests and uses mocked provider responses for reproducibility.
 
-```text
-                         Incoming Request
-                                │
-                                ▼
-                    ┌──────────────────────┐
-                    │ Complexity Classifier │
-                    │   Random Forest V4   │
-                    └──────────┬───────────┘
-                               │
-                     Raw tier + confidence
-                               │
-                               ▼
-                 ┌──────────────────────────┐
-                 │ Confidence Safety Policy │
-                 │ <85% → promote one tier │
-                 └────────────┬─────────────┘
-                              │
-                              ▼
-                    Final Routing Tier
-                              │
-             ┌────────────────┼────────────────┐
-             ▼                ▼                ▼
-          Tier 1           Tier 2           Tier 3
-        Mistral Small   Groq GPT-OSS-20B    Higher tier
-             │                │                │
-             └────────────────┼────────────────┘
-                              │
-                              ▼
-                    Provider / Circuit
-                     Breaker / Retry
-                              │
-                    ┌─────────┴─────────┐
-                    │                   │
-                  Success             Failure
-                    │                   │
-                    │              Fallback model
-                    │                   │
-                    └─────────┬─────────┘
-                              ▼
-                       Response to caller
-                              │
-                              ▼
-                    Async Quality Verification
-                              │
-                    ┌─────────┴─────────┐
-                    │                   │
-                  Passed             Failed
-                    │                   │
-                    ▼                   ▼
-                  Keep              Escalate
-                                      │
-                                      ▼
-                              Stronger reference
-                                  response
-                              │
-                              ▼
-                         Audit + Metrics
-```
+Metric	Current result
+Requests	30
+Routing accuracy	100.00%
+Success rate	100.00%
+Fallback rate	0.00%
+Average latency	0.9333 s
+P50 latency	0.9000 s
+P95 latency	1.3500 s
+P99 latency	1.3500 s
+Input tokens	2,250
+Output tokens	3,550
+Total tokens	5,800
+Actual benchmark cost	$0.001425
+Average cost/request	$0.0000475
+Configured all-GPT-4o baseline	$0.041125
+Estimated cost reduction	$0.039700 / 96.53%
+Run it with:
 
----
+uv run python -m benchmark.benchmark
+The result is written to:
 
-## Current Results
+benchmark/results/latest.json
+The benchmark is deterministic and does not require live provider calls.
 
-The current deterministic benchmark contains **30 fixed requests** and uses mocked provider responses for reproducibility.
+Frozen V4 baseline
+The frozen V4 evaluation is preserved separately from the current benchmark:
 
-| Metric                         |       Current result |
-| ------------------------------ | -------------------: |
-| Benchmark requests             |               **30** |
-| Routing accuracy               |          **100.00%** |
-| Success rate                   |          **100.00%** |
-| Fallback rate                  |            **0.00%** |
-| Average latency                |         **0.9333 s** |
-| P50 latency                    |         **0.9000 s** |
-| P95 latency                    |         **1.3500 s** |
-| P99 latency                    |         **1.3500 s** |
-| Total tokens                   |            **5,800** |
-| Actual benchmark cost          |        **$0.001425** |
-| Average cost/request           |       **$0.0000475** |
-| Configured all-GPT-4o baseline |        **$0.041125** |
-| Estimated cost reduction       | **$0.0397 / 96.53%** |
+30-request independent benchmark
 
-The cost-reduction figure is an **estimated comparison against the project's configured all-GPT-4o price baseline**, not a claim of universal production savings.
+93.33% routing accuracy
 
-### Frozen V4 baseline
+100% success
 
-The classifier's frozen V4 evaluation remains preserved independently from the current benchmark artifact:
+0% fallback
 
-* 30-request independent benchmark
-* **93.33% routing accuracy**
-* 100% success
-* 0% fallback
-* Frozen artifact: `benchmark/results/v4_final.json`
+Frozen result: benchmark/results/v4_final.json
 
-The current `benchmark/results/latest.json` represents the latest benchmark run and should not be confused with the frozen V4 evaluation.
+The 93.33% figure is the historical frozen V4 evaluation. The 100% figure is the current deterministic benchmark after subsequent routing-policy and implementation work. They should not be presented as the same measurement.
 
----
+Why This Is More Than Basic LLM Routing
+The project combines model selection with explicit reliability, quality, and accounting mechanisms.
 
-## Why This Project Is More Than Basic LLM Routing
-
-The project combines several production-oriented mechanisms rather than simply selecting a model from a static list.
-
-### 1. Confidence-aware routing
-
+1. Confidence-aware routing
 The classifier produces:
 
-* predicted complexity tier
-* classification confidence
-* probability distribution
+predicted complexity tier
 
-A conservative routing policy is applied:
+classification confidence
 
-```text
+probability distribution
+
+The operational policy is:
+
 confidence >= 85%
     → retain predicted tier
 
@@ -132,101 +152,98 @@ confidence < 85%
 
 T3
     → remains T3
-```
+This deliberately separates the ML prediction from the production routing policy.
 
-This separates the **machine-learning prediction** from the **operational safety policy**.
+Example:
 
-For example:
-
-```text
 Classifier:
     Tier 1
-    Confidence: 62%
+    Confidence: 80.5%
 
 Safety policy:
     Low confidence
 
 Final routing:
     Tier 2
-```
+The API and audit database expose both decisions.
 
-The API exposes both the raw classifier decision and the final routing decision, making the promotion auditable.
+2. V4 Complexity Classifier
+The current classifier is a frozen Random Forest model trained on a curated labeled dataset.
 
----
+V4 dataset
+335 labeled examples
 
-## 2. V4 Complexity Classifier
+Tier 1: 121
 
-The current classifier uses a Random Forest model trained on a curated labeled dataset.
+Tier 2: 106
 
-Current V4 dataset:
+Tier 3: 108
 
-* **335 labeled examples**
-* Tier 1: 121
-* Tier 2: 106
-* Tier 3: 108
-* **19 structural features**
-* Selected Random Forest classifier
-* Frozen production artifact: `data/classifier_v4_final.joblib`
+19 structural features
 
-The V4 held-out model evaluation reached approximately **97% accuracy**.
+Random Forest classifier
+
+Frozen artifact: data/classifier_v4_final.joblib
+
+The V4 held-out evaluation reached approximately 97% accuracy.
 
 The independent benchmark is kept separate from the training/held-out evaluation to provide a more realistic routing check.
 
-### Validate
-
-```powershell
+Validate
 uv run python -m scripts.check_routing_offline
 uv run pytest -q
-```
+The production service loads the frozen V4 artifact directly. The application does not retrain the classifier during startup or request handling.
 
-The production service loads the frozen V4 artifact `data/classifier_v4_final.joblib` directly. The application does not retrain the classifier during startup or request handling.
-
----
-
-## 3. Provider-Agnostic Model Registry
-
+3. Provider-Agnostic Model Registry
 Models are represented through a common registry and normalized response interface.
 
-Current routing configuration includes:
+Current live routing:
 
-| Tier   | Model                          | Provider              |
-| ------ | ------------------------------ | --------------------- |
-| Tier 1 | `mistral-small`                | Mistral               |
-| Tier 2 | `groq-gpt-oss-20b`             | Groq                  |
-| Tier 3 | Configured higher-quality tier | Provider-configurable |
+Tier	Model	Provider
+Tier 1	mistral-small	Mistral
+Tier 2	groq-gpt-oss-20b	Groq
+Tier 3	groq-gpt-oss-20b	Groq
+The repository also retains GPT-4o pricing information as a configured baseline for cost comparisons; it is not the current live routing target.
 
-Provider-specific failures are normalized into categories such as:
+Provider failures are normalized into categories such as:
 
-* rate limit
-* timeout
-* authentication
-* server error
-* circuit open
-* provider failure
+rate limit
+
+timeout
+
+authentication
+
+server error
+
+network/provider failure
+
+circuit open
 
 This keeps routing and accounting logic independent of provider-specific SDK behavior.
 
----
-
-## 4. Retry and Circuit-Breaker Resilience
-
+4. Retry, Circuit Breaker, and Fallback
 Provider calls are protected by bounded retry and circuit-breaker behavior.
 
 The system can:
 
-1. Attempt the primary provider.
-2. Retry transient failures with bounded backoff.
-3. Open a circuit after repeated failures.
-4. Route to a configured fallback.
-5. Record the primary failure and fallback decision.
-6. Return a standardized response to the caller.
+Attempt the primary provider.
 
-The audit trail distinguishes the primary model from the model that actually served the request.
+Retry transient failures with bounded backoff.
 
-Example:
+Open a circuit after repeated failures.
 
-```text
-Primary model:
+Route to a configured fallback.
+
+Record the primary failure and fallback decision.
+
+Return a standardized response.
+
+The audit trail distinguishes the model selected as primary from the model that actually served the request.
+
+Verified live failure path
+A Streamlit smoke test exercised the real fallback path:
+
+Primary:
     mistral-small
 
 Primary failure:
@@ -235,82 +252,104 @@ Primary failure:
 Fallback:
     groq-gpt-oss-20b
 
-used_fallback:
-    true
-```
+Result:
+    successful response
 
-This makes operational failure behavior observable rather than hiding it behind a generic success response.
+Quality score:
+    1.0
+The corresponding SQLite audit record confirmed:
 
----
+tier = 1
+classifier_tier = 1
+classification_confidence = 1.0
+primary_model = mistral-small
+primary_error_type = rate_limit
+routed_model = groq-gpt-oss-20b
+used_fallback = 1
+verified = 1
+quality_score = 1.0
+circuit_state = closed
+This demonstrates that fallback is an observable production path rather than only a unit-tested branch.
 
-## 5. Async Quality Verification
-
+5. Async Quality Verification
 Lower-cost responses can be verified against a stronger reference model.
 
 The verification pipeline records:
 
-* task type
-* quality score
-* verification threshold
-* original model
-* reference model
-* pass/fail result
-* escalation status
-* quality gap
-* additional cost
-* verification latency
+task type
+
+quality score
+
+verification threshold
+
+original model
+
+reference model
+
+pass/fail result
+
+escalation status
+
+quality gap
+
+additional cost
+
+verification latency
 
 Conceptually:
 
-```text
 Cheap response
       │
       ▼
 Quality verification
       │
- ┌────┴────┐
- │         │
-Pass      Fail
- │         │
- ▼         ▼
-Keep    Escalate
-           │
-           ▼
-      Reference response
-```
-
-Tier-3 requests can skip automatic verification because they are already routed directly to the highest configured quality tier.
+   ┌──┴──┐
+   │     │
+ Pass   Fail
+   │     │
+ Keep  Escalate
+          │
+          ▼
+     Reference response
+Tier-3 requests can skip automatic verification because they are already routed to the highest configured quality tier.
 
 Verification can operate asynchronously so the normal routing path does not have to wait for the quality audit.
 
----
-
-## 6. Full Audit and Cost Accounting
-
+6. Full Audit and Cost Accounting
 Every routed request receives a request ID and an audit record.
 
 The SQLite audit layer tracks information including:
 
-* request ID
-* classifier tier
-* final routing tier
-* classifier confidence
-* selected model
-* primary model
-* fallback model
-* provider error type
-* token usage
-* cost
-* latency
-* verification status
-* escalation
-* quality information
+request ID
+
+classifier tier
+
+final routing tier
+
+classifier confidence
+
+selected/routed model
+
+primary model
+
+provider error type
+
+token usage
+
+cost
+
+latency
+
+verification status
+
+escalation
+
+quality information
 
 Raw prompts are not stored in the audit database; the system stores a hash for request-level identification.
 
 This enables operational questions such as:
 
-```text
 How often is the classifier uncertain?
 
 How often does uncertainty cause promotion?
@@ -324,105 +363,87 @@ How much does verification cost?
 How much would the configured GPT-4o baseline have cost?
 
 Which routing tiers receive the most traffic?
-```
-
----
-
-## 7. FastAPI Service
-
+7. FastAPI Service
 The routing engine is exposed through an OpenAI-style completion API.
 
-### Endpoints
+Method	Endpoint	Purpose
+GET	/healthz	Liveness
+GET	/readyz	Dependency/readiness checks
+POST	/v1/completions	Route and complete a request
+GET	/v1/models	List available models
+GET	/v1/stats	Routing and cost statistics
+PUT	/v1/routing-config	Update routing configuration
+Interactive API documentation is available through FastAPI's generated /docs interface when the service is running.
 
-| Method | Endpoint             | Purpose                      |
-| ------ | -------------------- | ---------------------------- |
-| `POST` | `/v1/completions`    | Route and complete a request |
-| `GET`  | `/v1/models`         | List available models        |
-| `GET`  | `/v1/stats`          | Routing and cost statistics  |
-| `PUT`  | `/v1/routing-config` | Update routing configuration |
-
-Interactive API documentation is available through FastAPI's generated `/docs` interface when the service is running.
-
-### Start locally
-
-```powershell
+Start locally
 uv run uvicorn src.api.main:app --reload
-```
-
----
-
-## 8. Streamlit Command Center
-
+8. Streamlit Command Center
 The Streamlit dashboard provides an operational view of the system.
 
 It includes:
 
-* request playground
-* routing decision
-* raw classifier tier
-* classifier confidence
-* confidence safety policy
-* final routing tier
-* promotion transitions
-* model distribution
-* provider health
-* fallback statistics
-* cost trends
-* verification metrics
-* escalation metrics
-* benchmark results
-* audit records
-* architecture visualization
-* routing observability
+request playground
 
-The dashboard can operate locally against the FastAPI service or use **direct in-process routing** for Streamlit Cloud deployment.
+routing decision
 
-### Start locally
+raw classifier tier
 
-```powershell
+classifier confidence
+
+confidence safety policy
+
+final routing tier
+
+promotion transitions
+
+model distribution
+
+provider health
+
+fallback statistics
+
+cost trends
+
+verification metrics
+
+escalation metrics
+
+benchmark results
+
+audit records
+
+routing observability
+
+The dashboard can operate locally against FastAPI or use direct in-process routing for Streamlit Cloud deployment.
+
+Start locally
 uv run streamlit run dashboard/app.py
-```
-
----
-
-## 9. Streamlit Cloud Deployment
-
+9. Streamlit Cloud Deployment
 The dashboard supports a Cloud direct mode that runs the routing engine in-process instead of requiring a separately hosted FastAPI server.
 
 Enable it with:
 
-```text
 AUTOPILOT_CLOUD_MODE=true
-```
+Provider credentials should be supplied through Streamlit's secrets configuration rather than committed to Git.
 
-Provider credentials should be supplied through Streamlit's secrets configuration rather than committed to the repository.
+Typical configuration:
 
-Typical secrets include:
-
-```text
 AUTOPILOT_CLOUD_MODE=true
 MISTRAL_API_KEY=...
 GROQ_API_KEY=...
 GROQ_MODEL=openai/gpt-oss-20b
-```
-
 Secrets are intentionally excluded from Git.
 
-### Important deployment limitation
-
+Deployment limitation
 The current audit database is SQLite.
 
 Streamlit Cloud's local filesystem should not be treated as durable production storage. The application can therefore demonstrate the routing system and its observability layer in Cloud, but durable multi-instance production analytics would require an external persistent database.
 
----
-
-## 10. API Response Contract
-
+10. API Response Contract
 A successful completion exposes routing metadata alongside the generated response.
 
-Conceptually:
+The following is an illustrative response shape; values are examples:
 
-```json
 {
   "id": "request-id",
   "choices": [
@@ -446,86 +467,78 @@ Conceptually:
     "verification": "queued"
   }
 }
-```
+This makes the routing decision explainable and auditable instead of exposing only the generated text.
 
-This makes the routing decision explainable and auditable instead of exposing only the final generated text.
+11. Testing
+The current regression suite reports:
 
----
-
-## 11. Testing
-
-The project currently has:
-
-```text
 135 passed
 1 dependency warning
-```
+Run:
 
-Full regression:
-
-```powershell
 uv run pytest -q
-```
-
 The remaining warning originates from the installed Starlette/AnyIO dependency stack rather than application code.
 
 The test suite covers routing, classification, API behavior, authentication edge cases, provider behavior, fallback handling, verification, logging, statistics, and resilience paths.
 
----
+12. Benchmarking
+Use the module invocation:
 
-## 12. Benchmarking
-
-The deterministic benchmark runner is:
-
-```powershell
 uv run python -m benchmark.benchmark
-```
+Do not execute the file directly with:
 
-Do **not** execute `benchmark\benchmark.py` directly because the project imports the repository's `src` package.
+uv run python .\benchmark\benchmark.py
+The module invocation is the supported project command because the benchmark imports the repository's src package.
 
-The benchmark writes the current result to:
+Results:
 
-```text
 benchmark/results/latest.json
-```
+Frozen V4 result:
 
-The frozen V4 result is preserved at:
-
-```text
 benchmark/results/v4_final.json
-```
-
 The benchmark uses mocked provider responses so routing evaluation is deterministic and does not require live provider calls.
 
----
+13. Operational Validation
+The project validates more than deterministic unit-test behavior.
 
-## 13. Operational Validation
+The final local validation sequence included:
 
-The project also validates live provider failure behavior.
+FastAPI /healthz                  PASS
+FastAPI /readyz                   PASS
+Authenticated /v1/models         PASS
+Authenticated /v1/completions    PASS
+Confidence promotion             PASS
+SQLite request audit             PASS
+/v1/stats aggregation            PASS
+Deterministic benchmark          PASS
+Streamlit direct mode            PASS
+Live fallback path               PASS
+Full regression                  PASS
+Verified confidence-promotion path
+A live completion produced:
 
-For example, when the Mistral provider is rate-limited, the system records the provider failure and successfully exercises the configured fallback path rather than treating the failure as an unexplained application error.
+Classifier tier:       1
+Confidence:            80.5%
+Low confidence:        true
+Final tier:            2
+Selected model:        groq-gpt-oss-20b
+Fallback:              false
+Response:              4
+The corresponding SQLite audit record confirmed the same routing transition.
 
-This distinction is important:
+Verified provider-fallback path
+A separate Streamlit request produced:
 
-```text
-Model selection
-      +
-Provider reliability
-      +
-Fallback behavior
-      +
-Quality verification
-      +
-Cost accounting
-```
+Classifier tier:       1
+Confidence:            100%
+Primary:               mistral-small
+Primary error:         rate_limit
+Fallback:              groq-gpt-oss-20b
+Response:              4
+Quality score:         1.0
+The fallback request was persisted to the audit database.
 
-are evaluated as separate system concerns.
-
----
-
-## Repository Structure
-
-```text
+Repository Structure
 llm-cost-autopilot/
 │
 ├── benchmark/
@@ -534,12 +547,18 @@ llm-cost-autopilot/
 │       ├── latest.json
 │       └── v4_final.json
 │
+├── config/
+│   └── routing.yaml
+│
 ├── dashboard/
 │   └── app.py
 │
 ├── data/
 │   ├── classifier_v4_final.joblib
 │   ├── labeled_dataset_v4.csv
+│   └── ...
+│
+├── scripts/
 │   └── ...
 │
 ├── src/
@@ -554,48 +573,39 @@ llm-cost-autopilot/
 │
 ├── tests/
 │
-├── .streamlit/
-│   └── config.toml
-│
-├── CASE_STUDY.md
 ├── README.md
 ├── requirements.txt
 └── pyproject.toml
-```
+Runtime secrets, local environments, databases, logs, and other generated artifacts are intentionally excluded from Git where appropriate.
 
----
+Design Principles
+Cost-aware, not cost-only
+The cheapest model is not always the correct model. The router combines complexity classification with confidence-aware promotion and post-response verification.
 
-## Design Principles
-
-### Cost-aware, not cost-only
-
-The cheapest model is not always the correct model. The router therefore combines complexity classification with confidence-aware promotion and post-response verification.
-
-### ML decision ≠ production decision
-
+ML decision ≠ production decision
 The classifier produces a prediction. A separate safety policy can modify that prediction when confidence is low.
 
-### Failures are first-class events
-
+Failures are first-class events
 Provider failures, retries, circuit states, fallback decisions, verification failures, and escalations are recorded rather than hidden.
 
-### Reproducibility over impressive-looking numbers
+Reproducibility over impressive-looking numbers
+The evaluation separates:
 
-The benchmark separates:
+held-out classifier evaluation
 
-* held-out classifier evaluation
-* independent routing benchmark
-* frozen V4 results
-* current benchmark results
-* live provider smoke tests
+independent routing benchmark
+
+frozen V4 results
+
+current benchmark results
+
+live provider smoke tests
 
 This prevents unrelated measurements from being presented as the same metric.
 
-### Explainability at the API boundary
-
+Explainability at the API boundary
 The caller can inspect:
 
-```text
 raw classifier tier
 confidence
 final routing tier
@@ -605,76 +615,58 @@ fallback
 cost
 latency
 verification status
-```
-
 rather than receiving only a model response.
 
----
+Engineering Highlights
+Confidence-aware ML routing
 
-## Engineering Highlights
+Three-tier routing policy
 
-* Confidence-aware ML routing
-* Three-tier model architecture
-* Provider abstraction and normalized responses
-* Bounded retry logic
-* Circuit breakers
-* Automatic fallback
-* Async quality verification
-* Quality-based escalation
-* SQLite audit logging
-* Cost accounting
-* Routing observability
-* API authentication hardening
-* Streamlit operational dashboard
-* Streamlit Cloud direct execution mode
-* Deterministic routing benchmark
-* Frozen model artifact
-* Comprehensive regression suite
+Provider abstraction and normalized responses
 
----
+Bounded retry logic
 
-## Reproducibility
+Circuit breakers
 
-Create/activate the environment and install dependencies according to the project's package configuration.
+Automatic fallback
+
+Async quality verification
+
+Quality-based escalation
+
+SQLite audit logging
+
+Cost accounting
+
+Routing observability
+
+API authentication
+
+Streamlit operational dashboard
+
+Streamlit Cloud direct execution mode
+
+Deterministic routing benchmark
+
+Frozen V4 model artifact
+
+Comprehensive regression suite
+
+Reproducibility
+Create and activate the environment according to the project's package configuration.
 
 Run the complete regression suite:
 
-```powershell
 uv run pytest -q
-```
+Run offline routing validation:
 
-Run the deterministic routing benchmark:
+uv run python -m scripts.check_routing_offline
+Run the deterministic benchmark:
 
-```powershell
 uv run python -m benchmark.benchmark
-```
-
 Start the API:
 
-```powershell
 uv run uvicorn src.api.main:app --reload
-```
-
 Start the dashboard:
 
-```powershell
-uv run streamlit run dashboard/app.py
-```
-
----
-
-## Further Reading
-
-The detailed engineering decisions, evaluation methodology, trade-offs, and project evolution are documented in:
-
-**[CASE_STUDY.md](./CASE_STUDY.md)**
-
----
-
-## Project Status
-
-**Engineering implementation: complete**
-
-The current repository represents a production-oriented portfolio implementation of cost-aware LLM routing with explicit ML, reliability, verification, accounting, API, and observability layers.
-
-The remaining limitations are primarily infrastructure-related, including durable cloud persistence and the need for larger real-world evaluation datasets before making production-scale performance claims.
+uv run streamlit run dashboard/app.p
