@@ -417,7 +417,7 @@ routing observability
 The dashboard can operate locally against FastAPI or use direct in-process routing for Streamlit Cloud deployment.
 
 Start locally
-uv run streamlit run dashboard/app.py
+uv run streamlit run dashboard/app.pyy
 9. Streamlit Cloud Deployment
 The dashboard supports a Cloud direct mode that runs the routing engine in-process instead of requiring a separately hosted FastAPI server.
 
@@ -669,4 +669,4 @@ Start the API:
 uv run uvicorn src.api.main:app --reload
 Start the dashboard:
 
-uv run streamlit run dashboard/app.p
+uv run streamlit run dashboard/app.py
