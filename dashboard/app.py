@@ -42,6 +42,16 @@ API_BASE_URL = os.getenv(
 
 API_TIMEOUT_SECONDS = 120
 
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+CLOUD_MODE = env_flag("AUTOPILOT_CLOUD_MODE", False)
+
 CHART_COLORWAY = [
     "#f2a93c",
     "#4ea8de",
@@ -840,8 +850,8 @@ def render_hero(
         f"<strong>{total_requests:,}</strong>"
         "</div>"
         "<div>"
-        "<span>API target</span>"
-        f"<strong>{escape_html(api_target)}</strong>"
+        "<span>Service</span>"
+        "<strong>FastAPI</strong>"
         "</div>"
         "</div>"
         "</div>"
@@ -1021,6 +1031,24 @@ def load_benchmark(path: str) -> dict:
 # ---------------------------------------------------------------------
 
 
+def sync_cloud_provider_secrets() -> None:
+    """Expose Streamlit Cloud secrets to the existing provider config layer."""
+    if not is_cloud_mode():
+        return
+
+    for name in (
+        "MISTRAL_API_KEY",
+        "GROQ_API_KEY",
+        "GROQ_MODEL",
+        "PROVIDER_TIMEOUT_S",
+        "CIRCUIT_FAILURE_THRESHOLD",
+        "CIRCUIT_COOLDOWN_S",
+    ):
+        value = get_secret(name)
+        if value:
+            os.environ[name] = value
+
+
 def get_secret(name: str) -> str:
     try:
         value = st.secrets.get(name, "")
@@ -1034,6 +1062,17 @@ def get_secret(name: str) -> str:
 
 def get_api_base_url() -> str:
     return get_secret("AUTOPILOT_API_BASE_URL").rstrip("/") or API_BASE_URL
+
+
+def is_cloud_mode() -> bool:
+    try:
+        value = st.secrets.get("AUTOPILOT_CLOUD_MODE", "")
+        if value != "":
+            return str(value).strip().lower() in {"1", "true", "yes", "on"}
+    except Exception:
+        pass
+
+    return CLOUD_MODE
 
 
 def api_error_message(response: http_requests.Response) -> str:
@@ -1054,7 +1093,82 @@ def api_error_message(response: http_requests.Response) -> str:
     return f"API request failed with HTTP {response.status_code}."
 
 
+def _direct_completion(prompt: str, wait_for_verification: bool) -> dict:
+    sync_cloud_provider_secrets()
+    """Run the same routing engine used by FastAPI without HTTP."""
+    from src.routing import route_request_with_verification
+
+    result, verification = route_request_with_verification(
+        prompt,
+        synchronous=wait_for_verification,
+    )
+
+    if result.response.error:
+        error_type = result.response.error_type or "provider_error"
+        raise RuntimeError(
+            f"Completion failed after routing and fallback protection: {error_type}."
+        )
+
+    if verification is None:
+        verification_status = "skipped (tier 3)"
+        final_text = result.response.output_text
+    elif wait_for_verification:
+        verification_status = "escalated" if verification.escalated else "passed"
+        final_text = verification.final_response.output_text
+    else:
+        verification_status = "queued"
+        final_text = result.response.output_text
+
+    reasoning = {
+        1: "classified as simple - routed to the cheapest model",
+        2: "classified as moderate complexity - routed to a mid-tier model",
+        3: "classified as complex - routed straight to the highest-quality model",
+    }[result.tier]
+
+    if result.classifier_tier != result.tier:
+        reasoning += (
+            " (low-confidence classifier prediction was promoted "
+            "to a safer routing tier)"
+        )
+
+    if result.used_fallback:
+        reasoning += (
+            " (primary model for this tier was unavailable - used the fallback)"
+        )
+
+    return {
+        "id": result.request_id,
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": final_text,
+                }
+            }
+        ],
+        "routing": {
+            "request_id": result.request_id,
+            "tier": result.tier,
+            "classifier_tier": result.classifier_tier,
+            "classification_confidence": result.classification_confidence,
+            "low_confidence": result.low_confidence,
+            "selected_model": result.routed_model,
+            "reasoning": reasoning,
+            "used_fallback": result.used_fallback,
+            "cost_usd": result.response.cost_usd,
+            "latency_s": result.response.latency_s,
+            "verification": verification_status,
+        },
+    }
+
+
 def submit_completion(prompt: str, wait_for_verification: bool) -> dict:
+    if is_cloud_mode():
+        return _direct_completion(
+            prompt=prompt,
+            wait_for_verification=wait_for_verification,
+        )
+
     api_key = get_secret("AUTOPILOT_API_KEY")
 
     if not api_key:
@@ -1104,12 +1218,19 @@ def render_playground() -> None:
         "the lowest-cost configured model that matches predicted complexity."
     )
 
+    cloud_mode = is_cloud_mode()
     api_key_configured = bool(get_secret("AUTOPILOT_API_KEY"))
+    playground_ready = cloud_mode or api_key_configured
 
     status_col, action_col = st.columns([4, 1])
 
     with status_col:
-        if api_key_configured:
+        if cloud_mode:
+            st.success(
+                "Connected: `Streamlit Cloud direct mode` — "
+                "routing runs in-process."
+            )
+        elif api_key_configured:
             st.success(f"Connected target: `{get_api_base_url()}`")
         else:
             st.warning(
@@ -1177,7 +1298,7 @@ def render_playground() -> None:
         "⚡ Send through Autopilot",
         type="primary",
         use_container_width=True,
-        disabled=not api_key_configured,
+        disabled=not playground_ready,
     )
 
     if sent:
@@ -1202,10 +1323,16 @@ def render_playground() -> None:
                         "wait-for-verification or check provider availability."
                     )
                 except http_requests.ConnectionError:
-                    st.error(
-                        "Could not reach FastAPI. Start it with: "
-                        "`uvicorn src.api.main:app --reload`"
-                    )
+                    if is_cloud_mode():
+                        st.error(
+                            "The cloud request could not reach the provider. "
+                            "Check provider secrets and availability."
+                        )
+                    else:
+                        st.error(
+                            "Could not reach FastAPI. Start it with: "
+                            "`uvicorn src.api.main:app --reload`"
+                        )
                 except RuntimeError as exc:
                     st.error(str(exc))
                 except http_requests.RequestException as exc:
@@ -1527,7 +1654,7 @@ if total_requests == 0:
 elif total_success == total_requests:
     hero_status, hero_label = "positive", "NOMINAL"
 else:
-    hero_status, hero_label = "warning", "DEGRADED"
+    hero_status, hero_label = "success", "OPERATIONAL"
 
 render_hero(
     total_requests=total_requests,
@@ -1929,6 +2056,13 @@ with routing_tab:
                 """
             )
 
+            st.caption(
+                "**Confidence safety policy:** "
+                "≥85% confidence → retain the classifier tier · "
+                "<85% confidence → promote T1/T2 by one tier · "
+                "T3 remains T3 when confidence is low."
+            )
+
             if promotion_count:
                 st.info(
                     f"{promotion_count:,} classified requests were promoted "
@@ -2196,9 +2330,9 @@ with benchmark_tab:
 
         with b3:
             render_metric_card(
-                "Benchmark savings",
+                "Estimated cost reduction",
                 pct(savings_rate),
-                "Versus GPT-4o baseline",
+                "Vs configured all-GPT-4o price baseline",
                 "primary",
             )
 
