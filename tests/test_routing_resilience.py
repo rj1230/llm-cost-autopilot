@@ -332,3 +332,107 @@ def test_low_confidence_t1_promotes_to_t2_before_model_selection():
     assert logged["classifier_tier"] == 1
     assert logged["tier"] == 2
     assert logged["low_confidence"] is True
+def test_primary_and_fallback_failure_preserve_terminal_error_and_single_audit_row():
+    primary = get_model("mistral-small")
+    fallback = get_model("groq-gpt-oss-20b")
+
+    primary_failure = _failure_response(
+        primary.name,
+        "mistral",
+        "rate_limit",
+    )
+
+    fallback_failure = _failure_response(
+        fallback.name,
+        "groq",
+        "provider_unavailable",
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        db_path = Path(tmp_dir) / "requests.db"
+
+        with (
+            patch(
+                "src.logging_db.DB_PATH",
+                db_path,
+            ),
+            patch(
+                "src.logging_db.DATA_DIR",
+                Path(tmp_dir),
+            ),
+            patch(
+                "src.routing.predict_complexity",
+                return_value=ComplexityPrediction(
+                    tier=1,
+                    confidence=0.99,
+                    probabilities={
+                        1: 0.99,
+                        2: 0.01,
+                        3: 0.0,
+                    },
+                ),
+            ),
+            patch(
+                "src.routing._call_model",
+                side_effect=[
+                    primary_failure,
+                    fallback_failure,
+                ],
+            ) as mock_call,
+        ):
+            result = route_request(
+                "Explain what happens when both providers fail."
+            )
+
+        assert mock_call.call_count == 2
+
+        assert result.used_fallback is True
+        assert result.primary_model == primary.name
+        assert result.routed_model == fallback.name
+
+        assert result.response is fallback_failure
+        assert result.response.error_type == "provider_unavailable"
+
+        conn = sqlite3.connect(db_path)
+
+        try:
+            rows = conn.execute(
+                """
+                SELECT
+                    primary_model,
+                    routed_model,
+                    used_fallback,
+                    input_tokens,
+                    output_tokens,
+                    cost_usd,
+                    error_type,
+                    primary_error_type
+                FROM request_log
+                """
+            ).fetchall()
+        finally:
+            conn.close()
+
+    assert len(rows) == 1
+
+    (
+        primary_model,
+        routed_model,
+        used_fallback,
+        input_tokens,
+        output_tokens,
+        cost_usd,
+        error_type,
+        primary_error_type,
+    ) = rows[0]
+
+    assert primary_model == primary.name
+    assert routed_model == fallback.name
+    assert used_fallback == 1
+
+    assert input_tokens == fallback_failure.input_tokens
+    assert output_tokens == fallback_failure.output_tokens
+    assert cost_usd == fallback_failure.cost_usd
+
+    assert error_type == "provider_unavailable"
+    assert primary_error_type == "rate_limit"
