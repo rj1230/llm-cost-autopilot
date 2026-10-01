@@ -25,7 +25,7 @@ LLM Cost Autopilot is an intelligent routing layer that sits in front of multipl
 
 | Gate | Result |
 |---|---|
-| Automated regression | 135 passed |
+| Automated regression | 139 passed |
 | Deterministic benchmark | 100% routing accuracy |
 | Benchmark success / fallback rate | 100% / 0% |
 | Average benchmark latency | 0.9333 s |
@@ -298,7 +298,7 @@ The deterministic benchmark uses 30 fixed requests with mocked provider response
 
 The 93.33% figure is the historical frozen V4 evaluation. The 100% figure is the current deterministic benchmark, run after later routing-policy and implementation work. They are different measurements and should not be presented as the same one.
 
-**Local validation sequence** — all passed: `/healthz`, `/readyz`, authenticated `/v1/models`, authenticated `/v1/completions`, confidence promotion, SQLite request audit, `/v1/stats` aggregation, deterministic benchmark, Streamlit direct mode, live fallback path, and the full regression suite (135 passed, plus 1 warning that comes from the Starlette/AnyIO dependency stack, not application code).
+**Local validation sequence** — all passed: `/healthz`, `/readyz`, authenticated `/v1/models`, authenticated `/v1/completions`, confidence promotion, SQLite request audit, `/v1/stats` aggregation, deterministic benchmark, Streamlit direct mode, live fallback path, and the full regression suite (139 passed, plus 1 warning that comes from the Starlette/AnyIO dependency stack, not application code).
 
 **Verified live confidence-promotion path**
 
@@ -318,3 +318,4 @@ The SQLite audit record confirmed the same routing transition.
 - **Failures are first-class events** — provider failures, retries, circuit states, fallbacks, verification failures, and escalations are recorded, not hidden
 - **Reproducibility over impressive-looking numbers** — held-out evaluation, the independent benchmark, frozen V4 results, current benchmark results, and live smoke tests are kept as separate measurements
 - **Explainability at the API boundary** — callers see the raw tier, confidence, final tier, promotion, model, fallback, cost, latency, and verification status, not just the generated text
+
