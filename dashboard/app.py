@@ -842,7 +842,7 @@ def render_hero(
         '<div class="hero-meta">'
         "<div>"
         "<span>Environment</span>"
-        "<strong>LOCAL</strong>"
+        f"<strong>{'CLOUD' if is_cloud_mode() else 'LOCAL'}</strong>"
         "</div>"
         "<div>"
         "<span>Audit records</span>"
@@ -1093,8 +1093,8 @@ def api_error_message(response: http_requests.Response) -> str:
 
 
 def _direct_completion(prompt: str, wait_for_verification: bool) -> dict:
-    sync_cloud_provider_secrets()
     """Run the same routing engine used by FastAPI without HTTP."""
+    sync_cloud_provider_secrets()
     from src.routing import route_request_with_verification
 
     result, verification = route_request_with_verification(
