@@ -145,7 +145,7 @@ hr {
     margin: 1.75rem 0;
 }
 
-#MainMenu, footer, header {
+#MainMenu, footer {
     visibility: hidden;
 }
 
