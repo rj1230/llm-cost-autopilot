@@ -500,12 +500,4 @@ The single warning originates from the Starlette/AnyIO dependency stack, not app
 ## 📄 License
 
 This project is licensed under the MIT License.
-
----
-
-## 👤 Author
-
-**Raj Rajput**  
-Aspiring AI/ML Engineer · LLM Systems · AI Infrastructure · Agentic AI · Production ML
-
-GitHub: [@rj1230](https://github.com/rj1230)
+tHub: [@rj1230](https://github.com/rj1230)
