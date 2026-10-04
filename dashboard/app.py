@@ -1281,6 +1281,12 @@ def render_playground() -> None:
             ),
         )
 
+    st.caption(
+        f"DEBUG: cloud_mode={is_cloud_mode()} | "
+        f"cloud_secret_present={'AUTOPILOT_CLOUD_MODE' in st.secrets} | "
+        f"api_base={get_api_base_url()}"
+    )
+
     prompt_key = f"playground_prompt_{st.session_state.get('playground_nonce', 0)}"
 
     prompt = st.text_area(
