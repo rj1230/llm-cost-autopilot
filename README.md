@@ -12,6 +12,7 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-Random_Forest-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
 [![Tests](https://img.shields.io/badge/Tests-139_passed-brightgreen)](#-benchmarking--validation)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+🔗 **Live Demo:** [LLM-COST-AUTOPILOT Streamlit App](https://llm-cost-autopilot-kkycpzsln36nlxyg2npusw.streamlit.app/)
 
 </div>
 
