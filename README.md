@@ -588,10 +588,4 @@ LLM Cost Autopilot is designed to make cost optimization **measurable, safe, exp
 This project is licensed under the MIT License.
 
 ---
-
-## 👤 Author
-
-**Raj Rajput**  
-Aspiring AI/ML Engineer · Agentic AI · LLM Systems · Production ML
-
 - GitHub: [@rj1230](https://github.com/rj1230)
