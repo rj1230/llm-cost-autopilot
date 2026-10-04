@@ -27,6 +27,7 @@ import streamlit as st
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT_DIR / "data" / "requests.db"
 BENCHMARK_PATH = ROOT_DIR / "benchmark" / "results" / "latest.json"
+DEMO_DATA_PATH = ROOT_DIR / "data" / "demo_audit_records.json"
 
 sys.path.insert(0, str(ROOT_DIR))
 
@@ -1010,6 +1011,69 @@ def load_requests(db_path: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=REFRESH_INTERVAL_SECONDS)
+def load_demo_records(path: str) -> pd.DataFrame:
+    demo_path = Path(path)
+
+    if not demo_path.exists():
+        return pd.DataFrame()
+
+    try:
+        with demo_path.open("r", encoding="utf-8") as file:
+            records = json.load(file)
+    except (OSError, json.JSONDecodeError):
+        return pd.DataFrame()
+
+    if not isinstance(records, list):
+        return pd.DataFrame()
+
+    frame = pd.DataFrame(records)
+
+    if frame.empty:
+        return frame
+
+    frame["timestamp"] = pd.to_datetime(
+        frame["timestamp"],
+        errors="coerce",
+        utc=True,
+    )
+
+    for column in [
+        "tier",
+        "classifier_tier",
+        "input_tokens",
+        "output_tokens",
+        "cost_usd",
+        "latency_s",
+        "quality_score",
+        "classification_confidence",
+    ]:
+        if column in frame.columns:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+
+    for column in ["used_fallback", "escalated", "verified", "low_confidence"]:
+        if column in frame.columns:
+            frame[column] = (
+                pd.to_numeric(frame[column], errors="coerce")
+                .fillna(0)
+                .astype(int)
+                .astype(bool)
+            )
+
+    frame["tier"] = frame["tier"].fillna(0).astype(int)
+    frame["cost_usd"] = frame["cost_usd"].fillna(0.0)
+    frame["latency_s"] = frame["latency_s"].fillna(0.0)
+    frame["total_tokens"] = frame["input_tokens"].fillna(0) + frame[
+        "output_tokens"
+    ].fillna(0)
+    frame["success"] = frame["error_type"].isna() | frame["error_type"].astype(
+        str
+    ).str.strip().eq("")
+    frame["date"] = frame["timestamp"].dt.date
+
+    return frame
+
+
+@st.cache_data(ttl=REFRESH_INTERVAL_SECONDS)
 def load_benchmark(path: str) -> dict:
     benchmark_path = Path(path)
 
@@ -1450,7 +1514,8 @@ except RuntimeError as exc:
     request_log = pd.DataFrame()
 
 benchmark = load_benchmark(str(BENCHMARK_PATH))
-database_is_empty = request_log.empty
+
+
 
 
 # ---------------------------------------------------------------------
@@ -1460,6 +1525,22 @@ database_is_empty = request_log.empty
 with st.sidebar:
     render_sidebar_brand()
     st.divider()
+
+    demo_mode = st.toggle(
+        "Recruiter demo mode",
+        value=False,
+        help="Show 100 deterministic synthetic records instead of live SQLite audit records.",
+    )
+
+    if demo_mode:
+        st.caption("RECRUITER DEMO · SYNTHETIC DATA")
+    else:
+        st.caption("LIVE · SQLITE AUDIT")
+
+    if demo_mode:
+        request_log = load_demo_records(str(DEMO_DATA_PATH))
+
+    database_is_empty = request_log.empty
 
     if database_is_empty:
         render_empty_state(
